@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Add dartdoc comments across the entire public API (100% coverage).
+- Add pub.dev `topics` and bump `lints` to `^6.0.0`.
+
 ## 1.0.0
 
 - Initial release: a pure Dart port of Fuse.js v7.1.0.
