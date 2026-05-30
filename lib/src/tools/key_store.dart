@@ -1,7 +1,12 @@
 import '../core/config.dart';
 import '../core/error_messages.dart';
 
+/// A processed search key stored in a [FuseIndex].
+///
+/// Produced from a `String`/`List<String>` path or a [FuseKey]; holds the
+/// resolved path, id, normalized weight, and original source.
 class IndexedKey<T> {
+  /// Creates an indexed key.
   IndexedKey({
     required this.path,
     required this.id,
@@ -10,12 +15,22 @@ class IndexedKey<T> {
     this.getFn,
   });
 
+  /// The key path split into segments.
   final List<String> path;
+
+  /// The key id (the path joined by `.`).
   final String id;
+
+  /// The weight of this key, normalized across all keys.
   double weight;
+
+  /// The original key source (`String` or `List<String>`).
   final Object src;
+
+  /// Optional custom getter for this key's value.
   final KeyGetFunction<T>? getFn;
 
+  /// Serializes this key to JSON.
   Map<String, dynamic> toJson() => {
         'path': path,
         'id': id,
@@ -23,6 +38,7 @@ class IndexedKey<T> {
         'src': src,
       };
 
+  /// Rebuilds a key from its JSON form.
   factory IndexedKey.fromJson(Map<String, dynamic> json) {
     final src = json['src'] as Object;
     return IndexedKey<T>(

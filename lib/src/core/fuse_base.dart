@@ -11,20 +11,38 @@ import 'fuse_result.dart';
 import 'query_parser.dart';
 import 'results.dart';
 
+/// Fuzzy searcher over a collection of [docs].
+///
+/// [T] is the document type — typically `String` for a list of strings or
+/// `Map<String, dynamic>` for objects. Configure behavior with [options].
+///
+/// ```dart
+/// final fuse = Fuse(books, options: FuseOptions(keys: ['title', 'author']));
+/// final results = fuse.search('old man war');
+/// ```
 class Fuse<T> {
+  /// Creates a searcher over [docs].
+  ///
+  /// Pass [options] to configure keys, threshold, and other behavior. Pass a
+  /// prebuilt [index] (a [FuseIndex]) to skip indexing; it must match [docs].
   Fuse(List<T> docs, {FuseOptions<T>? options, Object? index})
       : options = options ?? FuseOptions<T>() {
     _keyStore = KeyStore<T>(this.options.keys);
     setCollection(docs, index);
   }
 
+  /// The options this instance was created with.
   final FuseOptions<T> options;
   late final KeyStore<T> _keyStore;
   late List<T> _docs;
   late FuseIndex<T> _myIndex;
 
+  /// The Fuse.js version this port targets.
   static const String version = '7.1.0';
 
+  /// Replaces the searched collection with [docs], rebuilding the index.
+  ///
+  /// Pass an existing [index] to reuse it instead of rebuilding.
   void setCollection(List<T> docs, [Object? index]) {
     _docs = docs;
 
@@ -41,11 +59,15 @@ class Fuse<T> {
         );
   }
 
+  /// Appends [doc] to the collection and indexes it.
   void add(T doc) {
     _docs.add(doc);
     _myIndex.add(doc);
   }
 
+  /// Removes every document for which [predicate] returns `true`.
+  ///
+  /// Returns the removed documents in their original order.
   List<T> remove(bool Function(T doc, int idx) predicate) {
     final results = <T>[];
 
@@ -62,13 +84,20 @@ class Fuse<T> {
     return results;
   }
 
+  /// Removes the document at [idx] from the collection and the index.
   void removeAt(int idx) {
     _docs.removeAt(idx);
     _myIndex.removeAt(idx);
   }
 
+  /// Returns the underlying search index.
   FuseIndex<T> getIndex() => _myIndex;
 
+  /// Searches the collection for [query] and returns ranked results.
+  ///
+  /// [query] is a `String` for plain/extended search, or a `Map` for a
+  /// logical `$and`/`$or` query. Pass [limit] to cap the number of results
+  /// (`-1` means no limit). Throws [ArgumentError] for an unsupported query.
   List<FuseResult<T>> search(Object query, {int limit = -1}) {
     List<InternalResult<T>> results;
 
@@ -297,6 +326,9 @@ class Fuse<T> {
     return matches;
   }
 
+  /// Builds a reusable [FuseIndex] for [docs] over [keys].
+  ///
+  /// Build once and pass to multiple [Fuse] instances to avoid re-indexing.
   static FuseIndex<U> createIndex<U>(
     List<Object> keys,
     List<U> docs, {
@@ -306,6 +338,9 @@ class Fuse<T> {
       createFuseIndex<U>(keys, docs,
           getFn: getFn, fieldNormWeight: fieldNormWeight);
 
+  /// Rebuilds a [FuseIndex] from previously serialized [data].
+  ///
+  /// [data] is the JSON produced by [FuseIndex.toJson].
   static FuseIndex<U> parseIndex<U>(
     Map<String, dynamic> data, {
     GetFunction<U>? getFn,
@@ -313,6 +348,9 @@ class Fuse<T> {
   }) =>
       parseFuseIndex<U>(data, getFn: getFn, fieldNormWeight: fieldNormWeight);
 
+  /// Parses a logical [query] into a [LogicalNode] tree.
+  ///
+  /// When [auto] is `true`, a searcher is attached to each leaf.
   static LogicalNode parseQuery<U>(
     Map query,
     FuseOptions<U> options, {

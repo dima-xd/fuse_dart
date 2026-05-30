@@ -1,7 +1,14 @@
 import 'types.dart';
 
+/// Reads the value at a key [path] from a document [obj].
 typedef GetFunction<T> = Object? Function(T obj, Object path);
 
+/// Reads the value(s) at [path] from [obj], following nested keys and arrays.
+///
+/// [path] is a dotted `String` (e.g. `'author.name'`) or a `List<String>` of
+/// segments. Scalar values are coerced to `String`. When the path traverses
+/// an array, a `List` of the collected values is returned; otherwise the
+/// single value is returned, or `null` if nothing is found.
 Object? get(Object? obj, Object path) {
   final list = <Object?>[];
   var arr = false;

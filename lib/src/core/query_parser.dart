@@ -20,20 +20,40 @@ Map<String, dynamic> _convertToExplicit(Map query) => {
       logicalAnd: query.keys.map((key) => {key: query[key]}).toList(),
     };
 
-abstract class LogicalNode {}
+/// A node in a parsed logical query tree.
+///
+/// Either a [LogicalLeaf] (a single key/pattern) or a [LogicalExpression]
+/// (an `$and`/`$or` over child nodes).
+abstract class LogicalNode {
+  /// Base constructor for subclasses.
+  LogicalNode();
+}
 
+/// A leaf of a logical query: match [pattern] against the key [keyId].
 class LogicalLeaf extends LogicalNode {
+  /// Creates a leaf for [keyId] and [pattern], optionally with a [searcher].
   LogicalLeaf({required this.keyId, required this.pattern, this.searcher});
 
+  /// The id of the key to search.
   final String keyId;
+
+  /// The query pattern for this key.
   final String pattern;
+
+  /// The searcher used to evaluate [pattern]; attached when parsed with
+  /// `auto: true`.
   Searcher? searcher;
 }
 
+/// An `$and`/`$or` combination of child [LogicalNode]s.
 class LogicalExpression extends LogicalNode {
+  /// Creates an expression with the given [operator] and [children].
   LogicalExpression({required this.operator, required this.children});
 
+  /// The logical operator: `$and` or `$or`.
   final String operator;
+
+  /// The child nodes combined by [operator].
   final List<LogicalNode> children;
 }
 

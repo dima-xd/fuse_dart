@@ -1,3 +1,18 @@
+/// A pure Dart port of [Fuse.js](https://fusejs.io), a lightweight
+/// fuzzy-search library.
+///
+/// Create a [Fuse] over a list of strings or objects, then call
+/// [Fuse.search]. Searching supports approximate (Bitap) matching, weighted
+/// keys, nested key paths, extended (unix-like) search syntax, and logical
+/// `$and`/`$or` queries.
+///
+/// ```dart
+/// final fuse = Fuse<String>(['Apple', 'Orange', 'Banana']);
+/// final results = fuse.search('aple');
+/// print(results.first.item); // Apple
+/// ```
+library;
+
 export 'src/core/config.dart'
     show
         FuseOptions,
