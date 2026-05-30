@@ -4,6 +4,13 @@ version: 1.0.0
 repository: https://github.com/dima-xd/fuse_dart
 issue_tracker: https://github.com/dima-xd/fuse_dart/issues
 
+topics:
+  - fuzzy-search
+  - search
+  - fuse
+  - string-matching
+  - text-search
+
 environment:
   sdk: ^3.0.0
 
@@ -12,4 +19,4 @@ dependencies:
 
 dev_dependencies:
   test: ^1.25.0
-  lints: ^4.0.0
+  lints: ^6.0.0
