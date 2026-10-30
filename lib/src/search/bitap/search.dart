@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 const int maxBits = 32;
 
@@ -56,13 +57,18 @@ List<List<int>> convertMaskToIndices(
   return indices;
 }
 
-Map<String, int> createPatternAlphabet(String pattern) {
-  final mask = <String, int>{};
+/// Builds the bit mask of the pattern characters, indexed by UTF-16 code unit.
+///
+/// A flat lookup table is used instead of a `Map<String, int>`: the Bitap
+/// inner loop reads one entry per text character, and hashing a freshly
+/// allocated one-character string on every step is the dominant cost there.
+Uint32List createPatternAlphabet(String pattern) {
+  final mask = Uint32List(65536);
   final len = pattern.length;
 
   for (var i = 0; i < len; i += 1) {
-    final char = pattern[i];
-    mask[char] = (mask[char] ?? 0) | (1 << (len - i - 1));
+    final char = pattern.codeUnitAt(i);
+    mask[char] |= 1 << (len - i - 1);
   }
 
   return mask;
@@ -83,17 +89,10 @@ int _safeIndexOf(String text, String pattern, int start) {
   return text.indexOf(pattern, start);
 }
 
-int _at(List<int> arr, int index) {
-  if (index < 0 || index >= arr.length) {
-    return 0;
-  }
-  return arr[index];
-}
-
 BitapSearchOutput search(
   String text,
   String pattern,
-  Map<String, int> patternAlphabet, {
+  Uint32List patternAlphabet, {
   int location = 0,
   int distance = 100,
   double threshold = 0.6,
@@ -109,7 +108,7 @@ BitapSearchOutput search(
   var bestLocation = expectedLocation;
 
   final computeMatches = minMatchCharLength > 1 || includeMatches;
-  final matchMask = computeMatches ? List<int>.filled(textLen, 0) : <int>[];
+  final matchMask = computeMatches ? Uint8List(textLen) : null;
 
   int index;
 
@@ -128,7 +127,7 @@ BitapSearchOutput search(
     if (computeMatches) {
       var i = 0;
       while (i < patternLen) {
-        matchMask[index + i] = 1;
+        matchMask![index + i] = 1;
         i += 1;
       }
     }
@@ -136,7 +135,7 @@ BitapSearchOutput search(
 
   bestLocation = -1;
 
-  var lastBitArr = <int>[];
+  var lastBitArr = Uint32List(0);
   var finalScore = 1.0;
   var binMax = patternLen + textLen;
 
@@ -162,7 +161,7 @@ BitapSearchOutput search(
         binMax = binMid;
       }
 
-      binMid = ((binMax - binMin) / 2).floor() + binMin;
+      binMid = binMin + ((binMax - binMin) >> 1);
     }
 
     binMax = binMid;
@@ -172,28 +171,36 @@ BitapSearchOutput search(
         ? textLen
         : math.min(expectedLocation + binMid, textLen) + patternLen;
 
-    final bitArr = List<int>.filled(finish + 2, 0);
+    final bitArr = Uint32List(finish + 2);
 
     bitArr[finish + 1] = (1 << i) - 1;
 
+    final firstRow = i == 0;
+    final matches = computeMatches;
+
     for (var j = finish; j >= start; j -= 1) {
       final currentLocation = j - 1;
-      final char = currentLocation < textLen ? text[currentLocation] : '';
-      final charMatch = patternAlphabet[char] ?? 0;
 
-      if (computeMatches && currentLocation < textLen) {
-        matchMask[currentLocation] = charMatch != 0 ? 1 : 0;
+      final charMatch = currentLocation < textLen
+          ? patternAlphabet[text.codeUnitAt(currentLocation)]
+          : 0;
+
+      if (matches && currentLocation < textLen) {
+        matchMask![currentLocation] = charMatch != 0 ? 1 : 0;
       }
 
-      bitArr[j] = ((bitArr[j + 1] << 1) | 1) & charMatch;
+      var value = ((bitArr[j + 1] << 1) | 1) & charMatch;
 
-      if (i != 0) {
-        bitArr[j] |= ((_at(lastBitArr, j + 1) | _at(lastBitArr, j)) << 1) |
-            1 |
-            _at(lastBitArr, j + 1);
+      if (!firstRow) {
+        // The previous row's window is never shorter than this one, so both
+        // reads are in bounds.
+        final lastNext = lastBitArr[j + 1];
+        value |= ((lastNext | lastBitArr[j]) << 1) | 1 | lastNext;
       }
 
-      if ((bitArr[j] & mask) != 0) {
+      bitArr[j] = value;
+
+      if ((value & mask) != 0) {
         finalScore = computeScore(
           pattern,
           errors: i,
@@ -238,7 +245,7 @@ BitapSearchOutput search(
   );
 
   if (computeMatches) {
-    final indices = convertMaskToIndices(matchMask, minMatchCharLength);
+    final indices = convertMaskToIndices(matchMask!, minMatchCharLength);
     if (indices.isEmpty) {
       result.isMatch = false;
     } else if (includeMatches) {

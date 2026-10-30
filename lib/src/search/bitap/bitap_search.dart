@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../helpers/diacritics.dart';
 import '../searcher.dart';
 import 'search.dart';
@@ -5,7 +7,7 @@ import 'search.dart';
 class _Chunk {
   _Chunk(this.pattern, this.alphabet, this.startIndex);
   final String pattern;
-  final Map<String, int> alphabet;
+  final Uint32List alphabet;
   final int startIndex;
 }
 

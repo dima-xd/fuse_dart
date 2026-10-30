@@ -1,6 +1,6 @@
 name: fuse_dart
 description: A pure Dart port of Fuse.js, a lightweight fuzzy-search library with extended search syntax, weighted keys, and Bitap scoring.
-version: 1.0.1
+version: 1.0.2
 repository: https://github.com/dima-xd/fuse_dart
 issue_tracker: https://github.com/dima-xd/fuse_dart/issues
 

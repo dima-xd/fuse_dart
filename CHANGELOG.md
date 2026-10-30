@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.2
+
+- Speed up fuzzy matching by several times: the Bitap kernel now uses a flat
+  code-unit lookup table and typed bit-mask rows instead of per-character
+  strings and maps.
+- Speed up index construction by several times with direct token counting and
+  an allocation-free scalar path lookup.
+- Add `benchmark/perf_suite.dart` and `benchmark/golden.dart` for repeatable
+  performance and behaviour comparisons; results are in
+  `benchmark/EXPERIMENTS.md`.
+
 ## 1.0.1
 
 - Add dartdoc comments across the entire public API (100% coverage).
