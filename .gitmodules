@@ -1,0 +1,3 @@
+[submodule "conformance"]
+	path = conformance
+	url = forgejo@forge.xela.codes:xela/fusejs-conformance.git
