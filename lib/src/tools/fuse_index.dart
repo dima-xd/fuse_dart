@@ -330,6 +330,9 @@ FuseIndex<T> createFuseIndex<T>(
   double? fieldNormWeight,
 }) {
   // Upstream reads live `Config` defaults at call time.
+  // Safe for any T: the field's declared type is
+  // `Object? Function(Object?, Object)`, a subtype of GetFunction<T> for
+  // every T (T is always assignable to Object?).
   getFn ??= globalFuseConfig.getFn as GetFunction<T>;
   fieldNormWeight ??= globalFuseConfig.fieldNormWeight;
   final index = FuseIndex<T>(getFn: getFn, fieldNormWeight: fieldNormWeight);
@@ -345,6 +348,9 @@ FuseIndex<T> parseFuseIndex<T>(
   GetFunction<T>? getFn,
   double? fieldNormWeight,
 }) {
+  // Safe for any T: the field's declared type is
+  // `Object? Function(Object?, Object)`, a subtype of GetFunction<T> for
+  // every T (T is always assignable to Object?).
   getFn ??= globalFuseConfig.getFn as GetFunction<T>;
   fieldNormWeight ??= globalFuseConfig.fieldNormWeight;
   final index = FuseIndex<T>(getFn: getFn, fieldNormWeight: fieldNormWeight);

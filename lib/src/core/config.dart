@@ -354,6 +354,10 @@ class FuseOptions<T> {
 
 
   /// Function used to read a value from a document at a key path.
+  ///
+  /// The fallback cast is safe for any T: the global field's declared type
+  /// is `Object? Function(Object?, Object)`, a subtype of `GetFunction<T>`
+  /// for every T (T is always assignable to `Object?`).
   GetFunction<T> get getFn =>
       _getFn ?? (_globalConfig.getFn as GetFunction<T>);
   set getFn(GetFunction<T> value) => _getFn = value;

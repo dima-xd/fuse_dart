@@ -92,11 +92,14 @@ IndexedKey<T> createKey<T>(Object key) {
         getFn = fn;
       }
     } else {
-      final fuseKey = key as FuseKey<dynamic>;
-      final name = fuseKey.name;
+      if (key is! FuseKey<dynamic>) {
+        throw FuseException(invalidKeyType(key));
+      }
+
+      final name = key.name;
       src = name;
 
-      weight = fuseKey.weight;
+      weight = key.weight;
 
       if (weight <= 0) {
         throw FuseException(invalidKeyWeightValue(createKeyId(name)));
@@ -104,7 +107,39 @@ IndexedKey<T> createKey<T>(Object key) {
 
       path = createKeyPath(name);
       id = createKeyId(name);
-      getFn = fuseKey.getFn;
+
+      // Reading getFn soundly takes two views. The implicit variance check
+      // fires at the FIELD READ, so the view determines which keys survive:
+      //  - through `FuseKey<T>` (after `key is FuseKey<T>`): the read
+      //    checks the closure against `Object? Function(T)` — passes
+      //    exactly when the closure can safely accept T documents. This is
+      //    the exact-typed case (S == T).
+      //  - through `FuseKey<dynamic>`: only a getter that accepts anything
+      //    survives; a closure built for a concrete other type throws and
+      //    degrades to path lookup — the same semantics as the Map
+      //    branch's `fn is KeyGetFunction<T>` miss above.
+      // A bare read through any single view is unsound in one direction:
+      // `FuseKey<dynamic>`-view reads drop exact-typed keys, and a
+      // `FuseKey<T>` is-check alone doesn't make the read safe when T is a
+      // supertype of the key's own type argument (covariance succeeds,
+      // the read still throws).
+      KeyGetFunction<T>? readFn() {
+        if (key is FuseKey<T>) {
+          try {
+            return key.getFn;
+          } on TypeError {
+            // S <: T but the closure isn't T-compatible: fall through to
+            // the dynamic view.
+          }
+        }
+        try {
+          return key.getFn as KeyGetFunction<T>?;
+        } on TypeError {
+          return null;
+        }
+      }
+
+      getFn = readFn();
     }
   }
 

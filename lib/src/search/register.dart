@@ -40,6 +40,15 @@ void registerSearchers(List<SearcherPlugin> plugins) {
 
 /// Builds the searcher for [pattern] under [options], honoring registered
 /// plugins before falling back to plain Bitap search.
+///
+/// The searcher internals receive [options] through a covariant
+/// `FuseOptions<dynamic>` view and must only read T-independent fields from
+/// it (bools, numbers, non-generic typedefs). Reading a T-dependent
+/// function member such as `getFn` through that view inserts an implicit
+/// runtime variance check that throws for narrowly-typed closures — the
+/// bug class fixed in `createKey` (key_store.dart). If a searcher ever
+/// needs the getFn, thread it through a `GetFunction<T>` parameter
+/// instead.
 Searcher createSearcher<T>(
   String pattern,
   FuseOptions<T> options, {

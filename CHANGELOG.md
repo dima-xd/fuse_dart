@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.0.1
+
+Fixed a generic-variance crash in `createKey<T>`: passing a `FuseKey<T>`
+as a key to a `Fuse<T>` of the same document type threw `_TypeError`
+(`type '(S) => String' is not a subtype of type '((dynamic) => Object?)?'`).
+The old code read `getFn` through a covariant `FuseKey<dynamic>` view,
+which makes Dart insert an implicit runtime subtype check that fails for
+any closure typed for a concrete document type (contravariance). `createKey`
+now reads `getFn` through a two-view cascade — the exact-`FuseKey<T>` view
+when possible, then the dynamic view — so:
+
+- `FuseKey<T>` under `Fuse<T>`: getFn works (the crash case).
+- `FuseKey<dynamic>` under `Fuse<T>`: getFn works (unchanged).
+- `FuseKey<Other>` under `Fuse<T>`: name/weight/path are honored and getFn
+  degrades to path lookup — the same semantics as a Map key whose getFn
+  doesn't match `KeyGetFunction<T>`.
+- A non-`FuseKey` object raises `FuseException('Invalid key type: …')`
+  instead of an obscure `TypeError`.
+
+The codebase was audited for the same erase-at-read pattern elsewhere:
+the `globalFuseConfig.getFn as GetFunction<T>` fallbacks (config.dart,
+fuse_index.dart) are safe for every T by construction, and the search
+internals only read T-independent fields from their covariant
+`FuseOptions<dynamic>` view — both are now documented with safety
+comments, and `test/dart/key_store_test.dart` (11 tests) pins the whole
+contract so it cannot regress.
+
 ## 2.0.0
 
 Full behavioral parity with **Fuse.js 7.5.0**, verified by running the
