@@ -19,14 +19,14 @@ version.
 | `lib/src/helpers/` | `get.dart` (upstream `helpers/get.ts`), `types.dart` (`isDefined`, `epsilon`, `FuseException`), `diacritics.dart` (NFD via `unorm_dart` + non-decomposable map), `merge_indices.dart`. |
 | `tool/bridge/` | The conformance bridge server (`server.dart`) and its synchronous stdio (`sync_io.dart`). |
 | `tool/smoke.dart` | Manual smoke test of all major code paths. |
-| `conformance/` | The vendored upstream test suite + bridge shims (see below). |
+| `conformance/` | The shared conformance harness (git submodule; see below). |
 | `test/` | Dart-only tests: `test/dart/` (engine edges JS tests can't reach) and `test/bridge/` (bridge protocol, pure Dart). |
 | `example/` | Terminal port of the fusejs.io demo. |
 | `benchmark/` | Perf suite + experiment log (`EXPERIMENTS.md`). |
 
-Upstream reference: keep a clone of Fuse.js at the pinned version somewhere
-outside the repo (e.g. `/tmp/opencode/Fuse`). The conformance `dist/` builds
-are vendored from the upstream **repo** at the pinned tag — not the npm
+Upstream reference: the pinned `Fuse/` submodule inside `conformance/`
+carries the upstream repo at the pinned tag — sources, dist builds, and
+tests. The dist builds come from the upstream **repo**, not the npm
 package (npm's `fuse.basic.mjs` ships with feature gates enabled; the repo
 build gates them, which is what the tests expect).
 
@@ -38,25 +38,25 @@ When porting a change from Fuse.js:
 1. Diff the upstream commit (`src/` changes + its new tests).
 2. Port the source change into the mapped Dart file.
 3. Run the unshimmed baseline, then the bridge run (both must be green —
-   including any NEW upstream test files you vendored).
-4. Never hand-edit anything under `conformance/test/` (tests, fixtures, or
-   snapshots). If a vendored test fails, the Dart code is wrong.
+   including any NEW upstream test files that arrive with the pin bump).
+4. Never hand-edit anything inside `conformance/Fuse/` (tests, fixtures,
+   snapshots, dist). If a vendored test fails, the Dart code is wrong.
 
 ### Version-bump procedure (e.g. targeting 7.6.0)
 
-1. Clone upstream at the new tag; diff `CHANGELOG.md` and `src/` against the
-   previous pinned version.
+1. In `conformance/Fuse`, diff the upstream tag (`CHANGELOG.md` and `src/`
+   changes + its new tests) against the previous pin.
 2. Port every portable change (all of `src/` except Web-Worker infra —
    `FuseWorker` is JS-only and intentionally not ported).
-3. Update the vendored dists: `cp <upstream>/dist/fuse.mjs
-   <upstream>/dist/fuse.basic.mjs conformance/dist/`.
-4. Re-copy the upstream tests byte-unmodified: `cp -r <upstream>/test/.
-   conformance/test/` (delete files only for the JS-platform exclusions
-   listed in `conformance/vitest.config.ts`).
-5. Update `Fuse.version` in `lib/src/core/fuse_base.dart` and the pubspec
+3. Bump the submodule pin: `git -C conformance/Fuse fetch && git -C
+   conformance/Fuse checkout vX.Y.Z && git add conformance` (the
+   `__VERSION__` define reads `Fuse/package.json`). Check whether
+   upstream's `vitest.config.ts`-level assumptions changed (new test
+   files, renamed builds) before trusting the suite.
+4. Update `Fuse.version` in `lib/src/core/fuse_base.dart` and the pubspec
    version (major bump if scoring/output shapes change — see 2.0.0 notes
    in `CHANGELOG.md`).
-6. Run: unshimmed vitest → bridge vitest → `dart test` → `dart analyze lib
+5. Run: unshimmed vitest → bridge vitest → `dart test` → `dart analyze lib
    tool test`. All green before committing.
 
 ## Conformance harness
@@ -72,13 +72,16 @@ through the justfile, which exports `FUSE_REPO_ROOT` so the client can
 find this repo.
 
 ```
-fuse_conformance/
+conformance/                      (git submodule, pinned)
+  Fuse/                           upstream Fuse.js submodule, pinned; never modified
+  dist → Fuse/dist, src → Fuse/src
   bridges.mjs                     bridge registry (dart/go spawn commands)
-  dist/fuse.mjs, fuse.basic.mjs   vendored upstream repo builds (baseline engine)
-  src/core/errorMessages.ts       vendored: tests import error strings
-  src/search/token/analyzer.ts    vendored: tokenizer tests import it directly
-  src/helpers/diacritics.ts       vendored dep of analyzer.ts
-  test/                           upstream vitest suite, byte-unmodified
+  dist/fuse.mjs, fuse.basic.mjs   upstream repo builds (baseline engine, via the symlink)
+  src/core/errorMessages.ts       upstream: tests import error strings
+  src/search/token/analyzer.ts    upstream: tokenizer tests import it directly
+  src/helpers/diacritics.ts       upstream dep of analyzer.ts
+  test/                           this repo's own additions only (bridge shims)
+  Fuse/test/                      upstream vitest suite, byte-unmodified
   test/bridge/                    JS-side bridge shims (see below)
   vitest.config.ts                mode-gated import aliases
 ```
@@ -244,8 +247,8 @@ which would measure IPC, not the libraries.
 - **Use the justfile**: `just check` (analyze + dart tests + baseline +
   bridge conformance) before committing; `just harness` for bridge
   infrastructure tests; `just --list` for everything else.
-- Never modify files under `conformance/test/` (vendored suite) or
-  `conformance/dist/` except via the version-bump procedure.
+- Never modify files inside `conformance/Fuse/` (upstream suite, dist
+  builds) — they change only via the pin-bump procedure.
 - Upstream strings (error messages, warning texts) must match **exactly** —
   tests match on substrings of them.
 - Prefer porting structure 1:1 from upstream files; keep file names mapped

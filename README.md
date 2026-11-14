@@ -259,8 +259,9 @@ dart run example/demo.dart "ste ham" --threshold=0.4 --useTokenSearch
 
 ## Conformance: how parity is verified
 
-The upstream Fuse.js vitest suite is vendored **byte-unmodified** under
-`conformance/test/` and runs twice:
+The upstream Fuse.js vitest suite is pinned **byte-unmodified** in the
+conformance submodule's `Fuse/` submodule (`conformance/Fuse/test/`) and
+runs twice:
 
 - **Unshimmed** against the real Fuse.js 7.5.0 dist builds — validates the
   harness itself (baseline).
@@ -276,7 +277,7 @@ npx vitest run                     # real Fuse.js (baseline)
 FUSE_BRIDGE=dart npx vitest run    # fuse_dart through the bridge
 ```
 
-Both runs pass (304 vendored tests; bridge mode adds 14 harness tests that
+Both runs pass (304 upstream tests; bridge mode adds 14 harness tests that
 guard the bridge infrastructure itself — process lifecycle, leak and
 deadlock regressions, shim fidelity). The Dart-side unit tests (`dart test`)
 cover Dart-specific edges (UTF-16 code-unit indexing, the 32-bit pattern
