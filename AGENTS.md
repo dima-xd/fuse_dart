@@ -61,13 +61,15 @@ When porting a change from Fuse.js:
 
 ## Conformance harness
 
-The conformance harness is **shared** with other Fuse.js ports: it lives in
-`~/Documents/fuse_conformance` (own git repo, symlinked here as
-`conformance/`; planned to become a git submodule). It contains the vendored
-upstream suite, dist builds, shims, and the generalized bridge client
-(`bridges.mjs` selects the server per `FUSE_BRIDGE` value). Run it through
-the justfile, which exports `FUSE_REPO_ROOT` so the client can find this
-repo.
+The conformance harness is **shared** with other Fuse.js ports: it is
+vendored here as the `conformance/` git submodule (pinned to
+forgejo@forge.xela.codes:xela/fusejs-conformance.git; init recursively —
+it carries its own pinned upstream `Fuse/` submodule — and run
+`npm install` inside it once). It contains the upstream test suite
+(pinned, unmodified), dist builds, shims, and the generalized bridge
+client (`bridges.mjs` selects the server per `FUSE_BRIDGE` value). Run it
+through the justfile, which exports `FUSE_REPO_ROOT` so the client can
+find this repo.
 
 ```
 fuse_conformance/

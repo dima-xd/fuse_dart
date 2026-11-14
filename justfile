@@ -2,9 +2,9 @@
 #
 # Everything is runnable via `just <recipe>`; see `just --list`.
 
-# Shared conformance lives in ../fuse_conformance (symlinked here); it will
-# become a git submodule later. FUSE_REPO_ROOT tells the bridge client which
-# repo is running it.
+# Shared conformance is vendored as the conformance/ git submodule (init
+# recursively, npm install inside once). FUSE_REPO_ROOT tells the bridge
+# client which repo is running it.
 export FUSE_REPO_ROOT := justfile_directory()
 
 default:
