@@ -209,10 +209,35 @@ RegExp _buildCombiningMarksRegExp() {
   return RegExp(buffer.toString());
 }
 
+/// Characters that survive NFD normalization unchanged and need explicit
+/// mapping, mirroring Fuse.js's `NON_DECOMPOSABLE_MAP`.
+const Map<String, String> _nonDecomposableMap = {
+  '\u0142': 'l', // ł
+  '\u0141': 'L', // Ł
+  '\u0111': 'd', // đ
+  '\u0110': 'D', // Đ
+  '\u00F8': 'o', // ø
+  '\u00D8': 'O', // Ø
+  '\u0127': 'h', // ħ
+  '\u0126': 'H', // Ħ
+  '\u0167': 't', // ŧ
+  '\u0166': 'T', // Ŧ
+  '\u0131': 'i', // ı
+  '\u00DF': 'ss', // ß
+};
+
+final RegExp _nonDecomposableRe = RegExp(
+  '[${_nonDecomposableMap.keys.join()}]',
+);
+
 /// Removes diacritical marks from [str].
 ///
 /// Mirrors the reference implementation, which canonically decomposes the
-/// string (Unicode NFD) and then strips every combining mark. Decomposition
-/// covers all scripts, so accented characters outside Latin are handled too.
+/// string (Unicode NFD), strips every combining mark, and then maps the
+/// handful of precomposed characters NFD cannot decompose (ł, ß, ø, …) to
+/// their ASCII equivalents.
 String stripDiacritics(String str) =>
-    unorm.nfd(str).replaceAll(_combiningMarks, '');
+    unorm.nfd(str).replaceAll(_combiningMarks, '').replaceAllMapped(
+          _nonDecomposableRe,
+          (match) => _nonDecomposableMap[match.group(0)]!,
+        );

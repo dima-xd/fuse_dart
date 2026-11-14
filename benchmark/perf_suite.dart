@@ -1,9 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fuse_dart/fuse_dart.dart';
 
 import 'fuse_benchmark.dart' show generateDataset;
-
 /// Deterministic workload suite used to measure optimizations.
 ///
 /// Run with `dart compile exe benchmark/perf_suite.dart` for stable numbers,
@@ -18,6 +18,13 @@ void main(List<String> args) {
   final only = _strArg(args, '--workload');
 
   final data = generateDataset(size);
+
+  // Cross-language parity: `compare.mjs` diffs this against the JS twin's
+  // dataset to prove both libraries are timed on identical input.
+  if (args.contains('--dump-dataset')) {
+    stdout.writeln(jsonEncode(data));
+    return;
+  }
   final strings = [for (final doc in data) doc['title'] as String];
 
   final options = FuseOptions<Map<String, dynamic>>(

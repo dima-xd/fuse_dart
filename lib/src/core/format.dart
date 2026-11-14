@@ -1,3 +1,4 @@
+import 'format_matches.dart';
 import 'fuse_result.dart';
 import 'results.dart';
 
@@ -10,31 +11,14 @@ List<FuseResult<T>> format<T>(
   return results.map((result) {
     final idx = result.idx;
 
-    List<FuseResultMatch>? matches;
-    if (includeMatches) {
-      matches = [];
-      for (final match in result.matches) {
-        final indices = match.indices;
-        if (indices == null || indices.isEmpty) {
-          continue;
-        }
-
-        matches.add(
-          FuseResultMatch(
-            indices: [for (final pair in indices) (pair[0], pair[1])],
-            value: match.value,
-            key: match.key?.src,
-            refIndex: (match.idx != null && match.idx! > -1) ? match.idx : null,
-          ),
-        );
-      }
-    }
-
-    return FuseResult<T>(
+    final data = FuseResult<T>(
       item: docs[idx],
       refIndex: idx,
-      score: includeScore ? result.score : null,
-      matches: matches,
     );
+
+    if (includeMatches) data.matches = formatMatches(result);
+    if (includeScore) data.score = result.score;
+
+    return data;
   }).toList();
 }
