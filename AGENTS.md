@@ -227,13 +227,19 @@ which would measure IPC, not the libraries.
 - The shared machinery (compare driver, per-language registry, JS
   perf-suite twin) lives in the conformance repo's `benchmark/`;
   fuse_dart keeps only its native suite, `benchmark/perf_suite.dart`.
-  The Go port has a twin suite with the same dataset generator.
+  The Go port has a twin suite with the same dataset generator. Default
+  dataset sizes are 1k / 10k / 100k docs (`--size` overrides).
 - `perf_suite.dart` and the JS twin are workload-identical: same
   workloads, same dataset generator, same methodology (median of
   `--samples` after `--warmup` untimed runs). If you add or change a
   workload or the dataset, update **both** files; the driver asserts
   dataset parity (identical order-insensitive canonical JSON from
   `--dump-dataset`) before trusting any timings.
+- Memory: the driver's memory pass runs each suite with `--workload`
+  (one fresh process per workload) and reports the peak incremental RSS
+  per workload. Dart has no way to force a GC, so its column is a
+  garbage-inclusive upper bound; go/js report post-GC retained state.
+  `--no-mem` skips the pass.
 - The Dart binary is AOT-compiled and cached in `.dart_tool/fuse_bench/`;
   it rebuilds automatically when `lib/` or `benchmark/` sources change.
   `--jit` compares JIT Dart instead (ignored for go/js). `--json` emits

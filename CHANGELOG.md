@@ -72,6 +72,10 @@ New development infrastructure (see `AGENTS.md`):
   (`just bench-compare`), asserting identical dataset generation on both
   sides and timing the libraries natively — fuse_dart AOT is ~2.25× faster
   (geomean, 10k docs), never slower on any workload. `justfile` added.
+  The driver now also runs a per-workload peak-RSS memory pass (fresh
+  process per workload; Dart's column is a garbage-inclusive upper bound
+  since Dart cannot force a GC) and defaults to 1k/10k/100k dataset
+  sizes.
   (The shared driver and JS twin now live in the conformance repo's
   `benchmark/`, used by all Fuse.js ports; this repo keeps only
   `benchmark/perf_suite.dart`.)

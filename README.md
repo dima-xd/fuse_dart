@@ -334,8 +334,16 @@ absolute numbers vary by machine, ratios are representative):
 | include_matches | 50.6 ms | 109 ms | 2.2× |
 | sorted_limit | 36.2 ms | 133 ms | 3.7× |
 
-Geomean across all ten workloads: **2.25× faster** at 10k docs (2.75× at
-1k docs). fuse_dart is never slower on any workload.
+Geomean across all ten workloads: **2.25× faster** at 10k docs (~2.8× at
+1k docs, ~2.1× at 100k docs — the 100k ratio swings with CPU frequency
+across the long run). fuse_dart is never slower on any workload.
+
+The shared driver also runs a per-workload **memory pass** (peak
+incremental RSS, one fresh process per workload). Note the semantics:
+go/js force a full GC before every read, so their columns approximate
+retained footprint — Dart exposes no way to force a GC, so its column is
+a peak-including-uncollected-garbage upper bound and can read low when
+the VM reuses freed pages. All memory numbers are cross-port ballparks.
 
 ## Testing
 
