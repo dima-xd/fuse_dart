@@ -8,6 +8,18 @@ upstream vitest suite runs byte-unmodified against the Dart engine through a
 JS↔Dart bridge. Read this file before porting changes or bumping the target
 version.
 
+## Before committing
+
+Run **`nix fmt`** at the repo root before every commit. It formats the
+whole repo via treefmt (dart format for `.dart`, nixfmt for `.nix`,
+prettier for everything else). Formatting is also enforced by the
+`checks.formatting` check in `nix flake check`. The `conformance/`
+submodule is excluded — it carries its own treefmt setup.
+
+If you change formatting configuration (`treefmt.nix`, `flake.nix`),
+keep the formatting run and the tooling change in separate commits so
+diffs stay reviewable.
+
 ## Repository map
 
 | Path | What it is |
@@ -262,7 +274,9 @@ which would measure IPC, not the libraries.
 - Dart-side naming follows Dart style (`toJson` not `toJSON`, named
   parameters for options); the README's API-mapping table is the contract
   for JS-doc readers.
-- `dart analyze lib tool test` must stay at 0 issues.
+- `dart analyze lib tool test` must stay at 0 issues; formatting runs
+  through `nix fmt` (treefmt: dart format + prettier + nixfmt) before
+  committing — see "Before committing" above.
 - The `unorm_dart` dependency exists for full Unicode NFD in
   `ignoreDiacritics` and the non-decomposable map (ł, ß, ø, đ, ħ, ŧ, ı).
 - flixur integration (future): the Go port (`~/Documents/fusego`) reuses the

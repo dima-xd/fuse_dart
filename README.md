@@ -353,6 +353,14 @@ cd conformance && npx vitest run   # baseline
 FUSE_BRIDGE=dart npx vitest run    # conformance through the bridge
 ```
 
+## Formatting
+
+`nix fmt` formats the whole repo via treefmt (dart format for `.dart`,
+nixfmt for `.nix`, prettier for everything else). Run it before
+committing — see `AGENTS.md`; `nix flake check` enforces it via
+`checks.formatting`. The `conformance/` submodule is excluded — it
+carries its own treefmt setup.
+
 ## License
 
 Apache License 2.0. This is a derivative work of Fuse.js

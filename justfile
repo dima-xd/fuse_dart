@@ -24,9 +24,9 @@ test:
 smoke:
     dart run tool/smoke.dart
 
-# Format Nix expressions (dart fmt for Dart files)
+# Format everything (treefmt: dart format + prettier + nixfmt)
 fmt:
-    dart format lib tool test example benchmark
+    nix fmt
 
 # ── Conformance harness ──────────────────────────────────────────────
 
