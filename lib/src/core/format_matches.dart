@@ -16,7 +16,9 @@ List<FuseResultMatch> formatMatches<T>(InternalResult<T> result) {
 
     matches.add(
       FuseResultMatch(
-        indices: [for (final pair in indices) [pair[0], pair[1]]],
+        indices: [
+          for (final pair in indices) [pair[0], pair[1]]
+        ],
         value: match.value,
         key: key,
         refIndex: match.idx != null && match.idx! > -1 ? match.idx : null,

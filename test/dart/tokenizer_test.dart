@@ -49,14 +49,16 @@ void main() {
     test('Hangul, Cyrillic, Greek, Arabic are single tokens', () {
       expect(analyzer.tokenize('한국어'), ['한국어']);
       expect(analyzer.tokenize('Привет'), ['привет']); // lowercased by default
-      expect(analyzer.tokenize('Σίσυφος'), ['σίσυφος']); // lowercased by default
+      expect(
+          analyzer.tokenize('Σίσυφος'), ['σίσυφος']); // lowercased by default
       expect(analyzer.tokenize('سلام'), ['سلام']);
     });
 
     test('mixed scripts stay one token (like JS \\p{L} across scripts)', () {
       // \p{L} covers all scripts, so 'English中文' is one token — no
       // script-boundary splitting.
-      expect(analyzer.tokenize('English中文'), ['english中文']); // lowercased by default
+      expect(analyzer.tokenize('English中文'),
+          ['english中文']); // lowercased by default
     });
   });
 
@@ -65,7 +67,8 @@ void main() {
       final analyzer = createAnalyzer(tokenize: RegExp(r'[\w.+-]+'));
       // Dart RegExp has no /g; createAnalyzer's regexp path uses allMatches,
       // matching the JS global-flag behavior.
-      expect(analyzer.tokenize('node.js and C++'), ['node.js', 'and', 'c++']); // lowercased by default
+      expect(analyzer.tokenize('node.js and C++'),
+          ['node.js', 'and', 'c++']); // lowercased by default
     });
 
     test('matches the JS `tokenize: /[\\w.+-]+/g` fixture behavior', () {

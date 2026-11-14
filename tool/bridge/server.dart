@@ -12,7 +12,8 @@ import 'package:fuse_dart/src/search/searcher.dart';
 import 'package:fuse_dart/src/search/token/analyzer.dart';
 import 'package:fuse_dart/src/tools/fuse_index.dart';
 import 'package:fuse_dart/src/tools/key_store.dart' show IndexedKey;
-import 'package:fuse_dart/src/search/register.dart' show SearcherPlugin, registerSearchers;
+import 'package:fuse_dart/src/search/register.dart'
+    show SearcherPlugin, registerSearchers;
 
 import 'sync_io.dart';
 
@@ -47,9 +48,9 @@ void main() {
   // process would otherwise outlive the JS side forever. Ask the kernel to
   // SIGTERM us the moment our parent (the JS client or a Dart test) dies.
   // PR_SET_PDEATHSIG = 1, SIGTERM = 15 (Linux).
-  final prctl = DynamicLibrary.process()
-      .lookupFunction<IntPtr Function(Int32, IntPtr, IntPtr, IntPtr, IntPtr),
-          int Function(int, int, int, int, int)>('prctl');
+  final prctl = DynamicLibrary.process().lookupFunction<
+      IntPtr Function(Int32, IntPtr, IntPtr, IntPtr, IntPtr),
+      int Function(int, int, int, int, int)>('prctl');
   prctl(1, 15, 0, 0, 0);
 
   final io = SyncLineIO();
@@ -353,16 +354,14 @@ class _BridgeServer {
         for (final entry in inv.df.entries) [entry.key, entry.value],
       ],
       'docFieldCount': [
-        for (final entry in inv.docFieldCount.entries)
-          [entry.key, entry.value],
+        for (final entry in inv.docFieldCount.entries) [entry.key, entry.value],
       ],
       'docTermFieldHits': [
         for (final entry in inv.docTermFieldHits.entries)
           [
             entry.key,
             [
-              for (final term in entry.value.entries)
-                [term.key, term.value],
+              for (final term in entry.value.entries) [term.key, term.value],
             ],
           ],
       ],
@@ -428,8 +427,7 @@ class _BridgeServer {
           );
           return result == true;
         },
-        create:
-            (String pattern, FuseOptions<dynamic> options, Object? _) {
+        create: (String pattern, FuseOptions<dynamic> options, Object? _) {
           final instanceId = _callJs(
             '$ref:create',
             [pattern, _optionsSnapshot(options)],
@@ -466,9 +464,8 @@ class _BridgeServer {
       'ignoreFieldNorm': false,
       'fieldNormWeight': 1,
     };
-    final raw = _activeSessionId == null
-        ? null
-        : _sessionRawOptions[_activeSessionId];
+    final raw =
+        _activeSessionId == null ? null : _sessionRawOptions[_activeSessionId];
     if (raw != null) {
       merged.addAll(raw);
     }
@@ -500,11 +497,11 @@ class _BridgeServer {
     final options = _decodeOptions(frame['options']);
     final auto = frame['auto'] == true;
     final query = decodeValue(frame['query']);
-    _activeSessionId = frame.containsKey('id')
-        ? (frame['id'] as num).toInt()
-        : null;
+    _activeSessionId =
+        frame.containsKey('id') ? (frame['id'] as num).toInt() : null;
     try {
-      return _serializeNode(parse<Object?>(query as Object, options, auto: auto));
+      return _serializeNode(
+          parse<Object?>(query as Object, options, auto: auto));
     } finally {
       _activeSessionId = null;
     }
@@ -603,7 +600,9 @@ class _BridgeServer {
     return FuseKey<dynamic>(
       name: name as Object,
       weight: (map['weight'] as num?)?.toDouble() ?? 1,
-      getFn: map['getFn'] == null ? null : _keyGetFnFromRef(map['getFn'] as Object),
+      getFn: map['getFn'] == null
+          ? null
+          : _keyGetFnFromRef(map['getFn'] as Object),
     );
   }
 
@@ -613,9 +612,9 @@ class _BridgeServer {
 
     // JS `{ ...defaults, ...options }` spreads carry explicit `undefined`
     // values for unset keys; those mean "absent" upstream. Strip them.
-    final source =
-        <dynamic, dynamic>{for (final e in (raw as Map).entries) e.key: e.value}
-          ..removeWhere((_, v) => v is Map && v[r'$t'] == 'undef');
+    final source = <dynamic, dynamic>{
+      for (final e in (raw as Map).entries) e.key: e.value
+    }..removeWhere((_, v) => v is Map && v[r'$t'] == 'undef');
     final map = source;
     dynamic pick(String key) => map.containsKey(key) ? map[key] : null;
 
@@ -800,7 +799,6 @@ class _BridgeServer {
       throw FuseException('unexpected frame during callback: $type');
     }
   }
-
 }
 
 /// A searcher whose `searchIn` runs in JS (a `Fuse.use` plugin). Each call

@@ -29,7 +29,9 @@ void main() {
 
   // Include matches with indices
   final f3 = Fuse(
-    [{'name': 'Hello World'}],
+    [
+      {'name': 'Hello World'}
+    ],
     options: FuseOptions<dynamic>(
       keys: ['name'],
       includeMatches: true,
@@ -42,7 +44,8 @@ void main() {
   // Token search
   final f4 = Fuse<String>(
     ['red shirt', 'red hat', 'blue shirt'],
-    options: FuseOptions(useTokenSearch: true, threshold: 0.2, tokenMatch: 'all'),
+    options:
+        FuseOptions(useTokenSearch: true, threshold: 0.2, tokenMatch: 'all'),
   );
   print('token AND: ${f4.search('red shirt').map((r) => r.item).toList()}');
 
@@ -54,7 +57,8 @@ void main() {
   print('extended ^lock: ${f6.search('^lock').map((r) => r.item).toList()}');
 
   // Fuse.match
-  print('match: ${Fuse.match('abc', 'abxc', FuseOptions<dynamic>(includeMatches: true)).indices}');
+  print(
+      'match: ${Fuse.match('abc', 'abxc', FuseOptions<dynamic>(includeMatches: true)).indices}');
 
   // Logical search
   final f7 = Fuse(
@@ -65,5 +69,7 @@ void main() {
       includeScore: true,
     ),
   );
-  print('logical: ${f7.search({'title': 'old man'}).map((r) => r.refIndex).toList()}');
+  print('logical: ${f7.search({
+            'title': 'old man'
+          }).map((r) => r.refIndex).toList()}');
 }

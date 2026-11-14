@@ -122,17 +122,19 @@ class ExtendedSearch implements Searcher {
     normalized =
         options.ignoreDiacritics ? stripDiacritics(normalized) : normalized;
     this.pattern = normalized;
-    _query = parseQuery(this.pattern, ExtendedMatchOptions(
-      location: options.location,
-      threshold: options.threshold,
-      distance: options.distance,
-      includeMatches: options.includeMatches,
-      findAllMatches: options.findAllMatches,
-      minMatchCharLength: options.minMatchCharLength,
-      isCaseSensitive: options.isCaseSensitive,
-      ignoreDiacritics: options.ignoreDiacritics,
-      ignoreLocation: options.ignoreLocation,
-    ));
+    _query = parseQuery(
+        this.pattern,
+        ExtendedMatchOptions(
+          location: options.location,
+          threshold: options.threshold,
+          distance: options.distance,
+          includeMatches: options.includeMatches,
+          findAllMatches: options.findAllMatches,
+          minMatchCharLength: options.minMatchCharLength,
+          isCaseSensitive: options.isCaseSensitive,
+          ignoreDiacritics: options.ignoreDiacritics,
+          ignoreLocation: options.ignoreLocation,
+        ));
   }
 
   final FuseOptions<dynamic> _options;

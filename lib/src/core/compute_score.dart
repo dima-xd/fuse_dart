@@ -16,8 +16,7 @@ double computeScoreSingle<T>(
     final weight = match.key?.weight;
 
     final base = match.score == 0 && weight != null ? epsilon : match.score;
-    final exponent =
-        (weight ?? 1) * (ignoreFieldNorm ? 1 : match.norm);
+    final exponent = (weight ?? 1) * (ignoreFieldNorm ? 1 : match.norm);
 
     totalScore *= _pow(base, exponent).toDouble();
   }
@@ -30,7 +29,8 @@ void computeScore<T>(
   bool ignoreFieldNorm = false,
 }) {
   for (final result in results) {
-    result.score = computeScoreSingle<T>(result.matches, ignoreFieldNorm: ignoreFieldNorm);
+    result.score =
+        computeScoreSingle<T>(result.matches, ignoreFieldNorm: ignoreFieldNorm);
   }
 }
 

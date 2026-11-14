@@ -167,10 +167,16 @@ void main() {
     final id = await request({
       'op': 'new',
       'docs': [
-        {'id': {r'$t': 'bigint', 'v': '9007199254740993'}},
-        {'id': {r'$t': 'bigint', 'v': '1234567890'}},
+        {
+          'id': {r'$t': 'bigint', 'v': '9007199254740993'}
+        },
+        {
+          'id': {r'$t': 'bigint', 'v': '1234567890'}
+        },
       ],
-      'options': {'keys': ['id']},
+      'options': {
+        'keys': ['id']
+      },
     });
     final sessionId = id['value'] as int;
 
@@ -195,7 +201,10 @@ void main() {
       'docs': [
         {'title': 'x'},
       ],
-      'options': {'keys': ['title'], 'useExtendedSearch': true},
+      'options': {
+        'keys': ['title'],
+        'useExtendedSearch': true
+      },
     });
     expect(response['type'], 'error');
     expect(response['message'], 'Extended search is not available');

@@ -22,19 +22,19 @@ diffs stay reviewable.
 
 ## Repository map
 
-| Path | What it is |
-| --- | --- |
-| `lib/fuse_dart.dart` | Public export surface. Keep it aligned with Fuse.js's public API (see `README.md` § "API mapping"). |
-| `lib/src/core/` | `fuse_base.dart` (the `Fuse` class — port of upstream `src/core/index.ts`), `config.dart` (`FuseOptions` + `Fuse.config` global), `compute_score.dart`, `format.dart`, `format_matches.dart`, `fuse_result.dart`, `query_parser.dart` (upstream `queryParser.ts`), `error_messages.dart` (must match upstream strings exactly). |
-| `lib/src/search/` | `bitap/` (`search.dart` = upstream bitap core, `bitap_search.dart` = the Searcher wrapper with chunking), `extended/` (extended-search matchers + `ExtendedSearch`), `token/` (`analyzer.dart`, `inverted_index.dart`, `token_search.dart`), `register.dart` (upstream `core/register.ts`), `searcher.dart` (`SearchResult` / `Searcher` interface). |
-| `lib/src/tools/` | `fuse_index.dart` (upstream `FuseIndex.ts` incl. `createIndex`/`parseIndex`), `key_store.dart` (upstream `KeyStore.ts`), `field_norm.dart` (upstream `fieldNorm.ts`), `max_heap.dart` (upstream `MaxHeap.ts`). |
-| `lib/src/helpers/` | `get.dart` (upstream `helpers/get.ts`), `types.dart` (`isDefined`, `epsilon`, `FuseException`), `diacritics.dart` (NFD via `unorm_dart` + non-decomposable map), `merge_indices.dart`. |
-| `tool/bridge/` | The conformance bridge server (`server.dart`) and its synchronous stdio (`sync_io.dart`). |
-| `tool/smoke.dart` | Manual smoke test of all major code paths. |
-| `conformance/` | The shared conformance harness (git submodule; see below). |
-| `test/` | Dart-only tests: `test/dart/` (engine edges JS tests can't reach) and `test/bridge/` (bridge protocol, pure Dart). |
-| `example/` | Terminal port of the fusejs.io demo. |
-| `benchmark/` | Perf suite + experiment log (`EXPERIMENTS.md`). |
+| Path                 | What it is                                                                                                                                                                                                                                                                                                                                           |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/fuse_dart.dart` | Public export surface. Keep it aligned with Fuse.js's public API (see `README.md` § "API mapping").                                                                                                                                                                                                                                                  |
+| `lib/src/core/`      | `fuse_base.dart` (the `Fuse` class — port of upstream `src/core/index.ts`), `config.dart` (`FuseOptions` + `Fuse.config` global), `compute_score.dart`, `format.dart`, `format_matches.dart`, `fuse_result.dart`, `query_parser.dart` (upstream `queryParser.ts`), `error_messages.dart` (must match upstream strings exactly).                      |
+| `lib/src/search/`    | `bitap/` (`search.dart` = upstream bitap core, `bitap_search.dart` = the Searcher wrapper with chunking), `extended/` (extended-search matchers + `ExtendedSearch`), `token/` (`analyzer.dart`, `inverted_index.dart`, `token_search.dart`), `register.dart` (upstream `core/register.ts`), `searcher.dart` (`SearchResult` / `Searcher` interface). |
+| `lib/src/tools/`     | `fuse_index.dart` (upstream `FuseIndex.ts` incl. `createIndex`/`parseIndex`), `key_store.dart` (upstream `KeyStore.ts`), `field_norm.dart` (upstream `fieldNorm.ts`), `max_heap.dart` (upstream `MaxHeap.ts`).                                                                                                                                       |
+| `lib/src/helpers/`   | `get.dart` (upstream `helpers/get.ts`), `types.dart` (`isDefined`, `epsilon`, `FuseException`), `diacritics.dart` (NFD via `unorm_dart` + non-decomposable map), `merge_indices.dart`.                                                                                                                                                               |
+| `tool/bridge/`       | The conformance bridge server (`server.dart`) and its synchronous stdio (`sync_io.dart`).                                                                                                                                                                                                                                                            |
+| `tool/smoke.dart`    | Manual smoke test of all major code paths.                                                                                                                                                                                                                                                                                                           |
+| `conformance/`       | The shared conformance harness (git submodule; see below).                                                                                                                                                                                                                                                                                           |
+| `test/`              | Dart-only tests: `test/dart/` (engine edges JS tests can't reach) and `test/bridge/` (bridge protocol, pure Dart).                                                                                                                                                                                                                                   |
+| `example/`           | Terminal port of the fusejs.io demo.                                                                                                                                                                                                                                                                                                                 |
+| `benchmark/`         | Perf suite + experiment log (`EXPERIMENTS.md`).                                                                                                                                                                                                                                                                                                      |
 
 Upstream reference: the pinned `Fuse/` submodule inside `conformance/`
 carries the upstream repo at the pinned tag — sources, dist builds, and
@@ -61,7 +61,7 @@ When porting a change from Fuse.js:
 2. Port every portable change (all of `src/` except Web-Worker infra —
    `FuseWorker` is JS-only and intentionally not ported).
 3. Bump the submodule pin: `git -C conformance/Fuse fetch && git -C
-   conformance/Fuse checkout vX.Y.Z && git add conformance` (the
+conformance/Fuse checkout vX.Y.Z && git add conformance` (the
    `__VERSION__` define reads `Fuse/package.json`). Check whether
    upstream's `vitest.config.ts`-level assumptions changed (new test
    files, renamed builds) before trusting the suite.
@@ -69,7 +69,7 @@ When porting a change from Fuse.js:
    version (major bump if scoring/output shapes change — see 2.0.0 notes
    in `CHANGELOG.md`).
 5. Run: unshimmed vitest → bridge vitest → `dart test` → `dart analyze lib
-   tool test`. All green before committing.
+tool test`. All green before committing.
 
 ## Conformance harness
 
@@ -167,19 +167,19 @@ with a `$t` discriminator (encode in `protocol.mjs` `encode`, decode in
 - `{"$t":"regexp","source","flags"}` — RegExp; Dart emulates the JS `g`
   flag (allMatches vs firstMatch).
 - `{"$t":"index","ref":N}` / `{"$t":"searcher","ref":N}` / `{"$t":"plugin",
-  "ref":"pN"}` — handles. Searcher handles decode to **stable marker
+"ref":"pN"}` — handles. Searcher handles decode to **stable marker
   objects** on the JS side so `toBe(cached)` identity assertions hold.
 
 ### Result shapes (JS-side fidelity)
 
 - Search results: `{item, refIndex, score?, matches?: [{indices, value,
-  key?, refIndex?}]}` — omit null fields so `toBeUndefined` assertions
+key?, refIndex?}]}` — omit null fields so `toBeUndefined` assertions
   hold. `item` is remapped on the JS side from a mirror of the caller's
   collection (indexed by `refIndex`) so object identity is preserved.
   Note: upstream keeps the caller's array **by reference** (`add` mutates
   it) — the shim must alias, not copy.
 - Index records: string docs `{v, i, n}`; object docs `{i, $: {"<keyIdx>":
-  {v, n, i?} | [...]}}`.
+{v, n, i?} | [...]}}`.
 - parseQuery trees: leaves `{keyId, pattern}` (omit `searcher` when
   `auto: false`), operators `{children, operator}`.
 - `key` in matches is `key.id` (the dotted path string).
@@ -211,8 +211,8 @@ with a `$t` discriminator (encode in `protocol.mjs` `encode`, decode in
     treats a deliberate shutdown as a crash;
   - the server calls `prctl(PR_SET_PDEATHSIG, SIGTERM)` at startup so the
     kernel reaps it when its parent dies.
-  All of these are regression-tested by the harness suite (`just harness`);
-  check for orphaned `server.dart` processes if you touch this area.
+    All of these are regression-tested by the harness suite (`just harness`);
+    check for orphaned `server.dart` processes if you touch this area.
 - `dart run` spawns a wrapper process; spawn `dart tool/bridge/server.dart`
   directly (cwd = repo root) so liveness polling tracks the real process.
 - `fileParallelism: false` + sequential execution in bridge mode: one Dart

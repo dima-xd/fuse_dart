@@ -272,110 +272,90 @@ class FuseOptions<T> {
   bool get isCaseSensitive => _isCaseSensitive ?? _globalConfig.isCaseSensitive;
   set isCaseSensitive(bool value) => _isCaseSensitive = value;
 
-
   /// Whether to strip diacritics (accents) before comparing.
   bool get ignoreDiacritics =>
       _ignoreDiacritics ?? _globalConfig.ignoreDiacritics;
   set ignoreDiacritics(bool value) => _ignoreDiacritics = value;
 
-
   /// Whether to include each result's score in the output.
   bool get includeScore => _includeScore ?? _globalConfig.includeScore;
   set includeScore(bool value) => _includeScore = value;
-
 
   /// Whether to sort results by score.
   bool get shouldSort => _shouldSort ?? _globalConfig.shouldSort;
   set shouldSort(bool value) => _shouldSort = value;
 
-
   /// Comparator used when [shouldSort] is `true`.
   FuseSortFunction get sortFn => _sortFn ?? _globalConfig.sortFn;
   set sortFn(FuseSortFunction value) => _sortFn = value;
-
 
   /// Keys to search; each is a `String`/`List<String>` path or a [FuseKey].
   List<Object> get keys => _keys ?? _globalConfig.keys;
   set keys(List<Object> value) => _keys = value;
 
-
   /// Whether to include matched character ranges in the output.
   bool get includeMatches => _includeMatches ?? _globalConfig.includeMatches;
   set includeMatches(bool value) => _includeMatches = value;
 
-
   /// Whether to keep matching to the end of the input after a perfect match.
   bool get findAllMatches => _findAllMatches ?? _globalConfig.findAllMatches;
   set findAllMatches(bool value) => _findAllMatches = value;
-
 
   /// Minimum number of characters a match must span to count.
   int get minMatchCharLength =>
       _minMatchCharLength ?? _globalConfig.minMatchCharLength;
   set minMatchCharLength(int value) => _minMatchCharLength = value;
 
-
   /// Approximate position in the text where a match is expected.
   int get location => _location ?? _globalConfig.location;
   set location(int value) => _location = value;
-
 
   /// Match cutoff in `0.0`–`1.0`; `0.0` requires a perfect match, `1.0`
   /// matches anything.
   double get threshold => _threshold ?? _globalConfig.threshold;
   set threshold(double value) => _threshold = value;
 
-
   /// How far a match may stray from [location] before scoring as a mismatch.
   int get distance => _distance ?? _globalConfig.distance;
   set distance(int value) => _distance = value;
-
 
   /// Whether to enable the extended (unix-like) search syntax.
   bool get useExtendedSearch =>
       _useExtendedSearch ?? _globalConfig.useExtendedSearch;
   set useExtendedSearch(bool value) => _useExtendedSearch = value;
 
-
   /// Whether to enable token search with TF-IDF scoring.
   bool get useTokenSearch => _useTokenSearch ?? _globalConfig.useTokenSearch;
   set useTokenSearch(bool value) => _useTokenSearch = value;
-
 
   /// Tokenizer for token search: a [RegExp] or a [TokenizeFunction].
   /// Defaults to the unicode-aware `/[\p{L}\p{M}\p{N}_]+/gu`.
   Object? get tokenize => _tokenize ?? _globalConfig.tokenize;
   set tokenize(Object? value) => _tokenize = value;
 
-
   /// How multi-word token-search queries combine: `'any'` (OR) or `'all'`.
   TokenMatch get tokenMatch => _tokenMatch ?? _globalConfig.tokenMatch;
   set tokenMatch(TokenMatch value) => _tokenMatch = value;
-
 
   /// Function used to read a value from a document at a key path.
   ///
   /// The fallback cast is safe for any T: the global field's declared type
   /// is `Object? Function(Object?, Object)`, a subtype of `GetFunction<T>`
   /// for every T (T is always assignable to `Object?`).
-  GetFunction<T> get getFn =>
-      _getFn ?? (_globalConfig.getFn as GetFunction<T>);
+  GetFunction<T> get getFn => _getFn ?? (_globalConfig.getFn as GetFunction<T>);
   set getFn(GetFunction<T> value) => _getFn = value;
-
 
   /// Whether to ignore [location]/[distance] so position does not matter.
   bool get ignoreLocation => _ignoreLocation ?? _globalConfig.ignoreLocation;
   set ignoreLocation(bool value) => _ignoreLocation = value;
 
-
   /// Whether to ignore the field-length norm when scoring.
-  bool get ignoreFieldNorm =>
-      _ignoreFieldNorm ?? _globalConfig.ignoreFieldNorm;
+  bool get ignoreFieldNorm => _ignoreFieldNorm ?? _globalConfig.ignoreFieldNorm;
   set ignoreFieldNorm(bool value) => _ignoreFieldNorm = value;
 
-
   /// How strongly the field-length norm affects scoring.
-  double get fieldNormWeight => _fieldNormWeight ?? _globalConfig.fieldNormWeight;
+  double get fieldNormWeight =>
+      _fieldNormWeight ?? _globalConfig.fieldNormWeight;
   set fieldNormWeight(double value) => _fieldNormWeight = value;
 
   /// Materializes every option so later `Fuse.config` mutations don't leak

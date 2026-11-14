@@ -29,7 +29,8 @@ class InvertedIndexData {
   final Map<int, Map<String, int>> docTermFieldHits;
 }
 
-void _addField(InvertedIndexData index, String text, int docIdx, Analyzer analyzer) {
+void _addField(
+    InvertedIndexData index, String text, int docIdx, Analyzer analyzer) {
   final tokens = analyzer.tokenize(text);
   if (tokens.isEmpty) return;
 
@@ -160,7 +161,8 @@ void removeAndShiftInvertedIndex(
 
   final shiftedDocFieldCount = <int, int>{};
   index.docFieldCount.forEach((oldKey, count) {
-    shiftedDocFieldCount[oldKey > firstRemoved ? shift(oldKey) : oldKey] = count;
+    shiftedDocFieldCount[oldKey > firstRemoved ? shift(oldKey) : oldKey] =
+        count;
   });
   index.docFieldCount
     ..clear()

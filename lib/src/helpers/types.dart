@@ -9,8 +9,7 @@ class JsUndefined {
 const jsUndefined = JsUndefined();
 
 /// JS `undefined` and `null` are both "not defined" for Fuse purposes.
-bool isDefined(Object? value) =>
-    value != null && value is! JsUndefined;
+bool isDefined(Object? value) => value != null && value is! JsUndefined;
 
 bool isBlank(String value) => value.trim().isEmpty;
 

@@ -92,27 +92,27 @@ final fuse = Fuse<Book>(
 
 Read the [Fuse.js docs](https://fusejs.io/api/options.html) and translate:
 
-| Fuse.js | fuse_dart | Notes |
-| --- | --- | --- |
-| `new Fuse(list, options, index)` | `Fuse(list, options: ..., index: ...)` | options are named parameters |
-| `fuse.search(query, { limit })` | `fuse.search(query, limit: n)` | default `-1` (no limit) |
-| `fuse.add(doc)` | `fuse.add(doc)` | |
-| `fuse.remove((doc, idx) => ...)` | `fuse.remove((doc, idx) => ...)` | returns removed docs |
-| `fuse.removeAt(idx)` | `fuse.removeAt(idx)` | returns the removed doc |
-| `fuse.setCollection(list, index?)` | `fuse.setCollection(list, index)` | |
-| `fuse.getIndex()` | `fuse.getIndex()` | returns `FuseIndex` |
-| `Fuse.version` | `Fuse.version` | `'7.5.0'` |
-| `Fuse.config` | `Fuse.config` | global mutable defaults (snapshot per instance) |
-| `Fuse.createIndex(keys, docs, options)` | `Fuse.createIndex(keys, docs, getFn: ..., fieldNormWeight: ...)` | |
-| `Fuse.parseIndex(data, options)` | `Fuse.parseIndex(data, getFn: ..., fieldNormWeight: ...)` | |
-| `Fuse.parseQuery(query, options, { auto })` | `Fuse.parseQuery(query, options, auto: false)` | |
-| `Fuse.match(pattern, text, options)` | `Fuse.match(pattern, text, options)` | returns `SearchResult` |
-| `Fuse.use(MySearcher)` | `Fuse.use([SearcherPlugin(condition: ..., create: ...)])` | Dart has no static methods on instances — see below |
-| `index.records` / `index.keys` | `index.records` / `index.keys` | |
-| `index.size()` / `index.toJSON()` | `index.size()` / `index.toJson()` | Dart naming |
-| `{ item, refIndex, score, matches }` | `FuseResult<T>` with the same fields | |
-| `{ indices, value, key, refIndex }` | `FuseResultMatch` with the same fields | |
-| `(int start, int end)` | `List<int>` (`RangeTuple = List<int>`) | `[start, end]` |
+| Fuse.js                                     | fuse_dart                                                        | Notes                                               |
+| ------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------- |
+| `new Fuse(list, options, index)`            | `Fuse(list, options: ..., index: ...)`                           | options are named parameters                        |
+| `fuse.search(query, { limit })`             | `fuse.search(query, limit: n)`                                   | default `-1` (no limit)                             |
+| `fuse.add(doc)`                             | `fuse.add(doc)`                                                  |                                                     |
+| `fuse.remove((doc, idx) => ...)`            | `fuse.remove((doc, idx) => ...)`                                 | returns removed docs                                |
+| `fuse.removeAt(idx)`                        | `fuse.removeAt(idx)`                                             | returns the removed doc                             |
+| `fuse.setCollection(list, index?)`          | `fuse.setCollection(list, index)`                                |                                                     |
+| `fuse.getIndex()`                           | `fuse.getIndex()`                                                | returns `FuseIndex`                                 |
+| `Fuse.version`                              | `Fuse.version`                                                   | `'7.5.0'`                                           |
+| `Fuse.config`                               | `Fuse.config`                                                    | global mutable defaults (snapshot per instance)     |
+| `Fuse.createIndex(keys, docs, options)`     | `Fuse.createIndex(keys, docs, getFn: ..., fieldNormWeight: ...)` |                                                     |
+| `Fuse.parseIndex(data, options)`            | `Fuse.parseIndex(data, getFn: ..., fieldNormWeight: ...)`        |                                                     |
+| `Fuse.parseQuery(query, options, { auto })` | `Fuse.parseQuery(query, options, auto: false)`                   |                                                     |
+| `Fuse.match(pattern, text, options)`        | `Fuse.match(pattern, text, options)`                             | returns `SearchResult`                              |
+| `Fuse.use(MySearcher)`                      | `Fuse.use([SearcherPlugin(condition: ..., create: ...)])`        | Dart has no static methods on instances — see below |
+| `index.records` / `index.keys`              | `index.records` / `index.keys`                                   |                                                     |
+| `index.size()` / `index.toJSON()`           | `index.size()` / `index.toJson()`                                | Dart naming                                         |
+| `{ item, refIndex, score, matches }`        | `FuseResult<T>` with the same fields                             |                                                     |
+| `{ indices, value, key, refIndex }`         | `FuseResultMatch` with the same fields                           |                                                     |
+| `(int start, int end)`                      | `List<int>` (`RangeTuple = List<int>`)                           | `[start, end]`                                      |
 
 ### Custom searchers (`Fuse.use`)
 
@@ -151,28 +151,28 @@ Instances snapshot the config at construction — the exact JS semantics of
 Every [Fuse.js option](https://fusejs.io/api/options.html) is available with
 the same name and default:
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `isCaseSensitive` | `bool` | `false` | Case-sensitive comparison. |
-| `ignoreDiacritics` | `bool` | `false` | Ignore accents. |
-| `includeScore` | `bool` | `false` | Include a `score` in each result. |
-| `includeMatches` | `bool` | `false` | Include match `indices` for highlighting. |
-| `shouldSort` | `bool` | `true` | Sort by ascending score. |
-| `sortFn` | `FuseSortFunction` | by score then index | Custom sort comparator. |
-| `keys` | `List<Object>` | `[]` | Keys: `String`, `List<String>`, or `FuseKey`. |
-| `findAllMatches` | `bool` | `false` | Keep scanning after a perfect match. |
-| `minMatchCharLength` | `int` | `1` | Minimum matched-run length to report. |
-| `location` | `int` | `0` | Approximate expected match position. |
-| `threshold` | `double` | `0.6` | `0.0` perfect match, `1.0` matches anything. |
-| `distance` | `int` | `100` | How far a match may stray from `location`. |
-| `useExtendedSearch` | `bool` | `false` | Enable Unix-like search operators. |
-| `useTokenSearch` | `bool` | `false` | Enable token search with TF-IDF ranking. |
-| `tokenize` | `RegExp` / function | unicode-aware default | Tokenizer for token search. |
-| `tokenMatch` | `'any'`/`'all'` | `'any'` | How multi-word token queries combine. |
-| `getFn` | `GetFunction<T>` | `get` | Custom global value accessor `(obj, path)`. |
-| `ignoreLocation` | `bool` | `false` | Ignore `location`/`distance`. |
-| `ignoreFieldNorm` | `bool` | `false` | Ignore the field-length norm in scoring. |
-| `fieldNormWeight` | `double` | `1` | Field-length norm strength. |
+| Option               | Type                | Default               | Description                                   |
+| -------------------- | ------------------- | --------------------- | --------------------------------------------- |
+| `isCaseSensitive`    | `bool`              | `false`               | Case-sensitive comparison.                    |
+| `ignoreDiacritics`   | `bool`              | `false`               | Ignore accents.                               |
+| `includeScore`       | `bool`              | `false`               | Include a `score` in each result.             |
+| `includeMatches`     | `bool`              | `false`               | Include match `indices` for highlighting.     |
+| `shouldSort`         | `bool`              | `true`                | Sort by ascending score.                      |
+| `sortFn`             | `FuseSortFunction`  | by score then index   | Custom sort comparator.                       |
+| `keys`               | `List<Object>`      | `[]`                  | Keys: `String`, `List<String>`, or `FuseKey`. |
+| `findAllMatches`     | `bool`              | `false`               | Keep scanning after a perfect match.          |
+| `minMatchCharLength` | `int`               | `1`                   | Minimum matched-run length to report.         |
+| `location`           | `int`               | `0`                   | Approximate expected match position.          |
+| `threshold`          | `double`            | `0.6`                 | `0.0` perfect match, `1.0` matches anything.  |
+| `distance`           | `int`               | `100`                 | How far a match may stray from `location`.    |
+| `useExtendedSearch`  | `bool`              | `false`               | Enable Unix-like search operators.            |
+| `useTokenSearch`     | `bool`              | `false`               | Enable token search with TF-IDF ranking.      |
+| `tokenize`           | `RegExp` / function | unicode-aware default | Tokenizer for token search.                   |
+| `tokenMatch`         | `'any'`/`'all'`     | `'any'`               | How multi-word token queries combine.         |
+| `getFn`              | `GetFunction<T>`    | `get`                 | Custom global value accessor `(obj, path)`.   |
+| `ignoreLocation`     | `bool`              | `false`               | Ignore `location`/`distance`.                 |
+| `ignoreFieldNorm`    | `bool`              | `false`               | Ignore the field-length norm in scoring.      |
+| `fieldNormWeight`    | `double`            | `1`                   | Field-length norm strength.                   |
 
 ## Token search (new in 7.5.0 parity)
 
@@ -196,16 +196,16 @@ Pass a `RegExp` or a `(String) => List<String>` function via `tokenize`.
 Enable with `useExtendedSearch: true`. Whitespace separates AND terms; `|`
 separates OR groups. Quoted tokens (`="hello world"`) keep inner spaces.
 
-| Token | Match type | Description |
-| --- | --- | --- |
-| `jscript` | fuzzy | Fuzzy match `jscript`. |
-| `=scheme` | exact | Exactly `scheme`. |
-| `'python` | include | Includes `python`. |
-| `!ruby` | inverse-exact | Does not include `ruby`. |
-| `^java` | prefix-exact | Starts with `java`. |
+| Token      | Match type     | Description                   |
+| ---------- | -------------- | ----------------------------- |
+| `jscript`  | fuzzy          | Fuzzy match `jscript`.        |
+| `=scheme`  | exact          | Exactly `scheme`.             |
+| `'python`  | include        | Includes `python`.            |
+| `!ruby`    | inverse-exact  | Does not include `ruby`.      |
+| `^java`    | prefix-exact   | Starts with `java`.           |
 | `!^erlang` | inverse-prefix | Does not start with `erlang`. |
-| `.js$` | suffix-exact | Ends with `.js`. |
-| `!.go$` | inverse-suffix | Does not end with `.go`. |
+| `.js$`     | suffix-exact   | Ends with `.js`.              |
+| `!.go$`    | inverse-suffix | Does not end with `.go`.      |
 
 ```dart
 final fuse = Fuse(items, options: FuseOptions(useExtendedSearch: true, keys: ['name']));
@@ -324,15 +324,15 @@ Measured results (AMD Ryzen 5 5600H, Dart SDK 3.11 AOT, Node v24, Nov 2026;
 absolute numbers vary by machine, ratios are representative):
 
 | workload (10k docs) | fuse_dart (AOT) | Fuse.js 7.5.0 | dart/js |
-| --- | --- | --- | --- |
-| index_build | 8.5 ms | 11.7 ms | 1.4× |
-| fuzzy_obj_hit | 44.6 ms | 137 ms | 3.1× |
-| fuzzy_obj_miss | 22.1 ms | 78.3 ms | 3.5× |
-| fuzzy_str_hit | 25.0 ms | 63.7 ms | 2.6× |
-| extended | 6.1 ms | 9.1 ms | 1.5× |
-| logical | 14.0 ms | 28.0 ms | 2.0× |
-| include_matches | 50.6 ms | 109 ms | 2.2× |
-| sorted_limit | 36.2 ms | 133 ms | 3.7× |
+| ------------------- | --------------- | ------------- | ------- |
+| index_build         | 8.5 ms          | 11.7 ms       | 1.4×    |
+| fuzzy_obj_hit       | 44.6 ms         | 137 ms        | 3.1×    |
+| fuzzy_obj_miss      | 22.1 ms         | 78.3 ms       | 3.5×    |
+| fuzzy_str_hit       | 25.0 ms         | 63.7 ms       | 2.6×    |
+| extended            | 6.1 ms          | 9.1 ms        | 1.5×    |
+| logical             | 14.0 ms         | 28.0 ms       | 2.0×    |
+| include_matches     | 50.6 ms         | 109 ms        | 2.2×    |
+| sorted_limit        | 36.2 ms         | 133 ms        | 3.7×    |
 
 Geomean across all ten workloads: **2.25× faster** at 10k docs (~2.8× at
 1k docs, ~2.1× at 100k docs — the 100k ratio swings with CPU frequency

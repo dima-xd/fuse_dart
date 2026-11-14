@@ -221,7 +221,10 @@ class FuseIndex<T> {
   /// are dropped silently — removeAll's natural use case is "caller passed a
   /// list of matched doc indices".
   void removeAll(List<int> indices) {
-    final toRemove = <int>{for (final v in indices) if (v >= 0) v};
+    final toRemove = <int>{
+      for (final v in indices)
+        if (v >= 0) v
+    };
 
     if (toRemove.isEmpty) {
       return;
@@ -268,8 +271,7 @@ class FuseIndex<T> {
     // Iterate over every key (i.e, path), and fetch the value at that key
     for (var keyIndex = 0; keyIndex < keys.length; keyIndex++) {
       final key = keys[keyIndex];
-      final value =
-          key.getFn != null ? key.getFn!(doc) : _getFn(doc, key.path);
+      final value = key.getFn != null ? key.getFn!(doc) : _getFn(doc, key.path);
 
       if (!isDefined(value)) {
         continue;
@@ -295,7 +297,8 @@ class FuseIndex<T> {
           } else if (item is SubRecord && isDefined(item.v)) {
             // Default get() returns {v, i} objects with original array
             // indices
-            final text = item.v is String ? item.v as String : toStringValue(item.v);
+            final text =
+                item.v is String ? item.v as String : toStringValue(item.v);
             if (!isBlank(text)) {
               subRecords.add(
                 RecordValue(v: text, i: item.i, n: _norm.get(text)),
@@ -306,8 +309,7 @@ class FuseIndex<T> {
 
         record.entries[keyIndex] = subRecords;
       } else if (value is String && !isBlank(value)) {
-        record.entries[keyIndex] =
-            RecordValue(v: value, n: _norm.get(value));
+        record.entries[keyIndex] = RecordValue(v: value, n: _norm.get(value));
       }
     }
 

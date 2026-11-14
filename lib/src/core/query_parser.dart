@@ -28,7 +28,9 @@ Map<String, dynamic> _convertToExplicit(Object query) {
   }
   final map = query as Map;
   return {
-    logicalAnd: [for (final key in map.keys) {key: map[key]}],
+    logicalAnd: [
+      for (final key in map.keys) {key: map[key]}
+    ],
   };
 }
 
@@ -97,13 +99,10 @@ LogicalNode parse<T>(
     }
 
     if (_isLeaf(query)) {
-      final Object key = isQueryPath
-          ? mapQuery[keyTypePath] as Object
-          : keys.first as Object;
+      final Object key =
+          isQueryPath ? mapQuery[keyTypePath] as Object : keys.first as Object;
 
-      final pattern = isQueryPath
-          ? mapQuery[keyTypePattern]
-          : mapQuery[key];
+      final pattern = isQueryPath ? mapQuery[keyTypePattern] : mapQuery[key];
 
       if (pattern is! String) {
         throw FuseException(logicalSearchInvalidQueryForKey(key.toString()));

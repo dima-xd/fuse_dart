@@ -108,10 +108,10 @@ class _DemoState {
       case 'threshold':
         threshold = double.parse(value ?? '0.6');
       case 'ignoreLocation' ||
-          'useExtendedSearch' ||
-          'useTokenSearch' ||
-          'includeScore' ||
-          'includeMatches':
+            'useExtendedSearch' ||
+            'useTokenSearch' ||
+            'includeScore' ||
+            'includeMatches':
         final toggle = name;
         final on = value == null ? true : value == 'true';
         if (toggle == 'ignoreLocation') ignoreLocation = on;
@@ -314,7 +314,8 @@ class _DemoState {
     return _highlight(text, match[0].indices);
   }
 
-  String _renderAuthor(Map<String, Object?> doc, FuseResult<Map<String, Object?>> result) {
+  String _renderAuthor(
+      Map<String, Object?> doc, FuseResult<Map<String, Object?>> result) {
     final author = doc['author'];
     if (author is! Map) return '';
     final first = author['firstName']?.toString() ?? '';

@@ -17,7 +17,8 @@ class TokenSearch implements Searcher {
   /// query terms matched each text so the core loop can require record-level
   /// coverage of every term. Bitmask is the ≤31-term fast path; Set is the
   /// ≥32-term fallback.
-  TokenSearch(String pattern, FuseOptions<dynamic> options, InvertedIndexData? invertedIndex)
+  TokenSearch(String pattern, FuseOptions<dynamic> options,
+      InvertedIndexData? invertedIndex)
       : _options = options,
         _analyzer = createAnalyzer(
           isCaseSensitive: options.isCaseSensitive,
@@ -82,8 +83,7 @@ class TokenSearch implements Searcher {
     // `tokenMatch: 'all'` coverage for this text (untouched in the default
     // 'any' path, so it allocates nothing there).
     var matchedMask = 0;
-    final Set<int>? matchedTerms =
-        _combineAll && !_useMask ? <int>{} : null;
+    final Set<int>? matchedTerms = _combineAll && !_useMask ? <int>{} : null;
 
     for (var i = 0; i < _termSearchers.length; i++) {
       final result = _termSearchers[i].searchIn(text);

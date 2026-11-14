@@ -18,13 +18,13 @@ import 'package:ffi/ffi.dart';
 
 final DynamicLibrary _libc = DynamicLibrary.process();
 
-final int Function(int, Pointer<Uint8>, int) _read = _libc
-    .lookupFunction<IntPtr Function(Int32, Pointer<Uint8>, UintPtr),
-        int Function(int, Pointer<Uint8>, int)>('read');
+final int Function(int, Pointer<Uint8>, int) _read = _libc.lookupFunction<
+    IntPtr Function(Int32, Pointer<Uint8>, UintPtr),
+    int Function(int, Pointer<Uint8>, int)>('read');
 
-final int Function(int, Pointer<Uint8>, int) _write = _libc
-    .lookupFunction<IntPtr Function(Int32, Pointer<Uint8>, UintPtr),
-        int Function(int, Pointer<Uint8>, int)>('write');
+final int Function(int, Pointer<Uint8>, int) _write = _libc.lookupFunction<
+    IntPtr Function(Int32, Pointer<Uint8>, UintPtr),
+    int Function(int, Pointer<Uint8>, int)>('write');
 
 const int _stdinFd = 0;
 const int _stdoutFd = 1;

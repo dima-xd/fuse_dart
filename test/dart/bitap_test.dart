@@ -40,9 +40,10 @@ void main() {
     });
 
     test('highlight indices align with code units for cutting substrings', () {
-      final fuse = Fuse(['a😀b needle c'], options: FuseOptions<dynamic>(
-        includeMatches: true,
-      ));
+      final fuse = Fuse(['a😀b needle c'],
+          options: FuseOptions<dynamic>(
+            includeMatches: true,
+          ));
       final result = fuse.search('needle');
 
       expect(result, hasLength(1));

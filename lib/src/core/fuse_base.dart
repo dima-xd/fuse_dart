@@ -1,7 +1,8 @@
 import '../helpers/get.dart';
 import '../helpers/types.dart';
 import '../search/register.dart';
-import '../search/searcher.dart';import '../search/token/analyzer.dart';
+import '../search/searcher.dart';
+import '../search/token/analyzer.dart';
 import '../search/token/inverted_index.dart';
 import '../search/token/token_search.dart' show maxMaskTerms;
 import '../tools/fuse_index.dart';
@@ -123,7 +124,8 @@ class Fuse<T> {
         ignoreDiacritics: options.ignoreDiacritics,
         tokenize: options.tokenize,
       );
-      addToInvertedIndex(_invertedIndex!, record, _myIndex.keys.length, analyzer);
+      addToInvertedIndex(
+          _invertedIndex!, record, _myIndex.keys.length, analyzer);
     }
 
     _invalidateSearcherCache();
@@ -292,8 +294,8 @@ class Fuse<T> {
       }
 
       if (limit > -1) {
-        results = results.sublist(
-            0, limit < results.length ? limit : results.length);
+        results =
+            results.sublist(0, limit < results.length ? limit : results.length);
       }
     }
 
