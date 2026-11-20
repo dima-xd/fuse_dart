@@ -1,7 +1,9 @@
+import '../core/error_messages.dart';
+import '../core/config.dart' show globalFuseConfig;
 import '../helpers/get.dart';
 import '../helpers/types.dart';
+import 'field_norm.dart';
 import 'key_store.dart';
-import 'norm.dart';
 
 /// One indexed string value, with its field-length norm.
 class RecordValue {
@@ -53,6 +55,7 @@ class StringRecord extends FuseRecord {
   final String v;
 
   /// The field-length norm for [v].
+
   final double n;
 
   @override
@@ -94,10 +97,10 @@ class FuseIndex<T> {
   /// [getFn] reads values from documents; [fieldNormWeight] tunes the
   /// field-length norm.
   FuseIndex({GetFunction<T>? getFn, double fieldNormWeight = 1})
-      : _norm = Norm(weight: fieldNormWeight),
+      : _norm = FieldNorm(weight: fieldNormWeight),
         _getFn = getFn ?? ((T obj, Object path) => get(obj, path));
 
-  final Norm _norm;
+  final FieldNorm _norm;
   final GetFunction<T> _getFn;
 
   /// Whether [create] has already run.
@@ -109,7 +112,8 @@ class FuseIndex<T> {
   /// The indexed records.
   List<FuseRecord> records = [];
 
-  /// The indexed keys.
+  /// The indexed keys. Weights are the raw user values; scoring must resolve
+  /// them through [KeyStore], which normalizes them to sum to 1.
   List<IndexedKey<T>> keys = [];
   final Map<String, int> _keysMap = {};
 
@@ -140,34 +144,108 @@ class FuseIndex<T> {
 
     isCreated = true;
 
+    final len = docs.length;
+    final built = <FuseRecord>[];
+
+    // List is Array<String>
     if (docs.first is String) {
-      for (var docIndex = 0; docIndex < docs.length; docIndex += 1) {
-        _addString(docs[docIndex] as String, docIndex);
+      for (var i = 0; i < len; i++) {
+        final record = _createStringRecord(docs[i] as String, i);
+        if (record != null) {
+          built.add(record);
+        }
       }
     } else {
-      for (var docIndex = 0; docIndex < docs.length; docIndex += 1) {
-        _addObject(docs[docIndex], docIndex);
+      // List is Array<Object>
+      for (var i = 0; i < len; i++) {
+        built.add(_createObjectRecord(docs[i], i));
       }
     }
 
+    records = built;
     _norm.clear();
   }
 
-  /// Indexes [doc] and appends it to the records.
-  void add(T doc) {
-    final idx = size();
+  /// Appends a record for [doc] at [docIndex] (the doc's position in the
+  /// source array). Returns the appended record, or `null` when [doc] is a
+  /// blank string (those are skipped at record creation). Callers use the
+  /// return value to gate downstream bookkeeping like the inverted index.
+  FuseRecord? add(T doc, int docIndex) {
+    if (docIndex < 0) {
+      throw FuseException(invalidDocIndex);
+    }
+
     if (doc is String) {
-      _addString(doc, idx);
-    } else {
-      _addObject(doc, idx);
+      final record = _createStringRecord(doc, docIndex);
+      if (record != null) {
+        records.add(record);
+      }
+      return record;
+    }
+
+    final record = _createObjectRecord(doc, docIndex);
+    records.add(record);
+    return record;
+  }
+
+  /// Removes the record for the doc at the specified source-array (docs)
+  /// index. Blank string docs have no record; callers may pass such an index
+  /// and the splice is a no-op, but subsequent records still need their `.i`
+  /// decremented to track the docs array the caller is splicing in parallel.
+  void removeAt(int idx) {
+    if (idx < 0) {
+      throw FuseException(invalidDocIndex);
+    }
+
+    // Find and remove the record at this doc-index, if one exists. Records
+    // are typically sorted by .i but the algorithm doesn't depend on it —
+    // parsed indexes via setIndexRecords may arrive in arbitrary order.
+    for (var i = 0; i < records.length; i += 1) {
+      if (records[i].i == idx) {
+        records.removeAt(i);
+        break;
+      }
+    }
+
+    // Decrement every record whose source-array index is now stale.
+    for (var i = 0; i < records.length; i += 1) {
+      if (records[i].i > idx) {
+        records[i].i -= 1;
+      }
     }
   }
 
-  /// Removes the record at [idx] and shifts later document indices down.
-  void removeAt(int idx) {
-    records.removeAt(idx);
-    for (var i = idx, len = size(); i < len; i += 1) {
-      records[i].i -= 1;
+  /// Removes records for the docs at the specified source-array indices, then
+  /// shifts every surviving record's `.i` down by the count of removed
+  /// indices strictly less than it. Invalid entries (negative) in [indices]
+  /// are dropped silently — removeAll's natural use case is "caller passed a
+  /// list of matched doc indices".
+  void removeAll(List<int> indices) {
+    final toRemove = <int>{
+      for (final v in indices)
+        if (v >= 0) v
+    };
+
+    if (toRemove.isEmpty) {
+      return;
+    }
+
+    records.removeWhere((r) => toRemove.contains(r.i));
+
+    final sorted = toRemove.toList()..sort();
+    for (final record in records) {
+      // shift = count of removed indices strictly less than record.i
+      var lo = 0;
+      var hi = sorted.length;
+      while (lo < hi) {
+        final mid = (lo + hi) >> 1;
+        if (sorted[mid] < record.i) {
+          lo = mid + 1;
+        } else {
+          hi = mid;
+        }
+      }
+      record.i -= lo;
     }
   }
 
@@ -179,48 +257,52 @@ class FuseIndex<T> {
   /// The number of records in the index.
   int size() => records.length;
 
-  void _addString(String doc, int docIndex) {
-    if (isBlank(doc)) {
-      return;
+  StringRecord? _createStringRecord(String doc, int docIndex) {
+    if (!isDefined(doc) || isBlank(doc)) {
+      return null;
     }
-    records.add(StringRecord(v: doc, i: docIndex, n: _norm.get(doc)));
+
+    return StringRecord(v: doc, i: docIndex, n: _norm.get(doc));
   }
 
-  void _addObject(T doc, int docIndex) {
+  ObjectRecord _createObjectRecord(T doc, int docIndex) {
     final record = ObjectRecord(i: docIndex);
 
-    for (var keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
+    // Iterate over every key (i.e, path), and fetch the value at that key
+    for (var keyIndex = 0; keyIndex < keys.length; keyIndex++) {
       final key = keys[keyIndex];
       final value = key.getFn != null ? key.getFn!(doc) : _getFn(doc, key.path);
 
-      if (value == null) {
+      if (!isDefined(value)) {
         continue;
       }
 
       if (value is List) {
         final subRecords = <RecordValue>[];
-        final stack = <_StackItem>[_StackItem(-1, value)];
 
-        while (stack.isNotEmpty) {
-          final item = stack.removeLast();
-          final nestedArrIndex = item.nestedArrIndex;
-          final stackValue = item.value;
+        for (var i = 0; i < value.length; i += 1) {
+          final item = value[i];
 
-          if (stackValue == null) {
+          if (!isDefined(item)) {
             continue;
           }
 
-          if (stackValue is String && !isBlank(stackValue)) {
-            subRecords.add(
-              RecordValue(
-                v: stackValue,
-                i: nestedArrIndex,
-                n: _norm.get(stackValue),
-              ),
-            );
-          } else if (stackValue is List) {
-            for (var k = 0; k < stackValue.length; k += 1) {
-              stack.add(_StackItem(k, stackValue[k]));
+          if (item is String) {
+            // Custom getFn returning plain string array (backward compat)
+            if (!isBlank(item)) {
+              subRecords.add(
+                RecordValue(v: item, i: i, n: _norm.get(item)),
+              );
+            }
+          } else if (item is SubRecord && isDefined(item.v)) {
+            // Default get() returns {v, i} objects with original array
+            // indices
+            final text =
+                item.v is String ? item.v as String : toStringValue(item.v);
+            if (!isBlank(text)) {
+              subRecords.add(
+                RecordValue(v: text, i: item.i, n: _norm.get(text)),
+              );
             }
           }
         }
@@ -231,7 +313,7 @@ class FuseIndex<T> {
       }
     }
 
-    records.add(record);
+    return record;
   }
 
   /// Serializes the index (keys and records) to JSON for later reuse via
@@ -242,19 +324,19 @@ class FuseIndex<T> {
       };
 }
 
-class _StackItem {
-  _StackItem(this.nestedArrIndex, this.value);
-  final int nestedArrIndex;
-  final Object? value;
-}
-
 /// Builds and populates a [FuseIndex] for [docs] over [keys].
 FuseIndex<T> createFuseIndex<T>(
   List<Object> keys,
   List<T> docs, {
   GetFunction<T>? getFn,
-  double fieldNormWeight = 1,
+  double? fieldNormWeight,
 }) {
+  // Upstream reads live `Config` defaults at call time.
+  // Safe for any T: the field's declared type is
+  // `Object? Function(Object?, Object)`, a subtype of GetFunction<T> for
+  // every T (T is always assignable to Object?).
+  getFn ??= globalFuseConfig.getFn as GetFunction<T>;
+  fieldNormWeight ??= globalFuseConfig.fieldNormWeight;
   final index = FuseIndex<T>(getFn: getFn, fieldNormWeight: fieldNormWeight);
   index.setKeys(keys.map((k) => createKey<T>(k)).toList());
   index.setSources(docs);
@@ -266,8 +348,13 @@ FuseIndex<T> createFuseIndex<T>(
 FuseIndex<T> parseFuseIndex<T>(
   Map<String, dynamic> data, {
   GetFunction<T>? getFn,
-  double fieldNormWeight = 1,
+  double? fieldNormWeight,
 }) {
+  // Safe for any T: the field's declared type is
+  // `Object? Function(Object?, Object)`, a subtype of GetFunction<T> for
+  // every T (T is always assignable to Object?).
+  getFn ??= globalFuseConfig.getFn as GetFunction<T>;
+  fieldNormWeight ??= globalFuseConfig.fieldNormWeight;
   final index = FuseIndex<T>(getFn: getFn, fieldNormWeight: fieldNormWeight);
 
   final keys = (data['keys'] as List)

@@ -1,5 +1,6 @@
 import '../bitap/bitap_search.dart';
 import '../searcher.dart';
+import '../../core/config.dart';
 
 class ExtendedMatchOptions {
   const ExtendedMatchOptions({
@@ -209,15 +210,17 @@ class FuzzyMatch extends BaseMatch {
   FuzzyMatch(super.pattern, ExtendedMatchOptions options)
       : _bitapSearch = BitapSearch(
           pattern,
-          location: options.location,
-          threshold: options.threshold,
-          distance: options.distance,
-          includeMatches: options.includeMatches,
-          findAllMatches: options.findAllMatches,
-          minMatchCharLength: options.minMatchCharLength,
-          isCaseSensitive: options.isCaseSensitive,
-          ignoreDiacritics: options.ignoreDiacritics,
-          ignoreLocation: options.ignoreLocation,
+          FuseOptions<Object>(
+            location: options.location,
+            threshold: options.threshold,
+            distance: options.distance,
+            includeMatches: options.includeMatches,
+            findAllMatches: options.findAllMatches,
+            minMatchCharLength: options.minMatchCharLength,
+            isCaseSensitive: options.isCaseSensitive,
+            ignoreDiacritics: options.ignoreDiacritics,
+            ignoreLocation: options.ignoreLocation,
+          ),
         );
 
   static const String typeName = 'fuzzy';
@@ -299,3 +302,6 @@ final List<MatcherDescriptor> searchers = [
 ];
 
 const Set<String> multiMatchSet = {FuzzyMatch.typeName, IncludeMatch.typeName};
+
+/// Whether a matcher type is an inverse match.
+bool isInverse(String type) => type.startsWith('inverse');

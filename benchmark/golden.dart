@@ -38,7 +38,7 @@ void main() {
                         'value': m.value,
                         'ref': m.refIndex,
                         'indices': m.indices
-                            .map((range) => [range.$1, range.$2])
+                            .map((range) => [range[0], range[1]])
                             .toList(),
                       },
                   ],

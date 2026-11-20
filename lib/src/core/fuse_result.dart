@@ -1,5 +1,6 @@
 /// An inclusive `(start, end)` range of matched character indices.
-typedef RangeTuple = (int start, int end);
+/// An inclusive `[start, end]` pair of matched character indices.
+typedef RangeTuple = List<int>;
 
 /// Details of where a query matched within one field.
 ///
@@ -29,7 +30,7 @@ class FuseResultMatch {
 /// A single search result.
 class FuseResult<T> {
   /// Creates a result for [item].
-  const FuseResult({
+  FuseResult({
     required this.item,
     required this.refIndex,
     this.score,
@@ -43,8 +44,8 @@ class FuseResult<T> {
   final int refIndex;
 
   /// Relevance score (lower is better); `null` unless `includeScore` is set.
-  final double? score;
+  double? score;
 
   /// Per-field match details; `null` unless `includeMatches` is set.
-  final List<FuseResultMatch>? matches;
+  List<FuseResultMatch>? matches;
 }

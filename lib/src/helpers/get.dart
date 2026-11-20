@@ -3,82 +3,84 @@ import 'types.dart';
 /// Reads the value at a key [path] from a document [obj].
 typedef GetFunction<T> = Object? Function(T obj, Object path);
 
-void _deepGet(
-  Object? current,
-  List<String> segments,
-  int index,
-  List<Object?> out,
-) {
-  if (current == null) return;
+/// An indexed array value: the text [v] and the array index [i] it came from.
+class SubRecord {
+  SubRecord({required this.v, this.i});
 
-  if (index >= segments.length || segments[index].isEmpty) {
-    out.add(current);
-    return;
-  }
+  /// The value; a `String` for scalars reached through the default getter,
+  /// or a raw object when the key path is exhausted at a non-scalar.
+  final Object? v;
 
-  final key = segments[index];
-
-  if (current is! Map) return;
-  final value = current[key];
-
-  if (value == null) return;
-
-  if (index == segments.length - 1 &&
-      (value is String || value is num || value is bool)) {
-    out.add(toStringValue(value));
-  } else if (value is List) {
-    for (var i = 0; i < value.length; i += 1) {
-      _deepGet(value[i], segments, index + 1, out);
-    }
-  } else {
-    _deepGet(value, segments, index + 1, out);
-  }
+  /// The array index this value came from, or `null` for non-array paths.
+  final int? i;
 }
+
+/// One collected terminal value along a `get` traversal: a coerced `String`,
+/// a [SubRecord], or a raw object when the path ended at a non-scalar.
+typedef GotValue = Object;
 
 /// Reads the value(s) at [path] from [obj], following nested keys and arrays.
 ///
 /// [path] is a dotted `String` (e.g. `'author.name'`) or a `List<String>` of
 /// segments. Scalar values are coerced to `String`. When the path traverses
-/// an array, a `List` of the collected values is returned; otherwise the
-/// single value is returned, or `null` if nothing is found.
+/// an array, a `List` of collected values is returned; otherwise the single
+/// value is returned, or `null` if nothing is found.
 Object? get(Object? obj, Object path) {
-  final List<String> segments;
-  if (path is String) {
-    segments = path.split('.');
-  } else if (path is List<String>) {
-    segments = path;
-  } else {
-    segments = (path as List).cast<String>();
-  }
+  final list = <GotValue>[];
+  var arr = false;
 
-  Object? current = obj;
+  void deepGet(Object? current, List<String> path, int index, int? arrayIndex) {
+    if (!isDefined(current)) {
+      return;
+    }
 
-  for (var index = 0; index < segments.length; index += 1) {
-    if (current == null) return null;
+    if (index >= path.length || path[index].isEmpty) {
+      // If there's no path left, we've arrived at the object we care about.
+      list.add(
+        arrayIndex != null ? SubRecord(v: current, i: arrayIndex) : current!,
+      );
+      return;
+    }
 
-    final key = segments[index];
-    if (key.isEmpty) return current;
+    final key = path[index];
 
-    if (current is! Map) return null;
+    if (current is! Map) {
+      return;
+    }
     final value = current[key];
 
-    if (value == null) return null;
-
-    if (index == segments.length - 1 &&
-        (value is String || value is num || value is bool)) {
-      return toStringValue(value);
+    if (!isDefined(value)) {
+      return;
     }
 
-    if (value is List) {
-      final list = <Object?>[];
+    // If we're at the last value in the path, and if it's a string/number/bool,
+    // add it to the list
+    if (index == path.length - 1 &&
+        (value is String || value is num || value is bool || value is BigInt)) {
+      list.add(
+        arrayIndex != null
+            ? SubRecord(v: toStringValue(value), i: arrayIndex)
+            : toStringValue(value),
+      );
+    } else if (value is List) {
+      arr = true;
+      // Search each item in the array.
       for (var i = 0; i < value.length; i += 1) {
-        _deepGet(value[i], segments, index + 1, list);
+        deepGet(value[i], path, index + 1, i);
       }
-      return list;
+    } else if (path.isNotEmpty) {
+      // An object. Recurse further.
+      deepGet(value, path, index + 1, arrayIndex);
     }
-
-    current = value;
   }
 
-  return current;
+  // Backwards compatibility (since path used to be a string)
+  deepGet(
+    obj,
+    path is String ? path.split('.') : (path as List).cast<String>(),
+    0,
+    null,
+  );
+
+  return arr ? list : list.firstOrNull;
 }

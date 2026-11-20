@@ -1,32 +1,35 @@
 import 'dart:typed_data';
 
+import '../../core/config.dart';
 import '../../helpers/diacritics.dart';
+import '../../helpers/merge_indices.dart';
 import '../searcher.dart';
 import 'search.dart';
 
 class _Chunk {
   _Chunk(this.pattern, this.alphabet, this.startIndex);
+
   final String pattern;
   final Uint32List alphabet;
   final int startIndex;
 }
 
 class BitapSearch implements Searcher {
-  BitapSearch(
-    String pattern, {
-    this.location = 0,
-    this.threshold = 0.6,
-    this.distance = 100,
-    this.includeMatches = false,
-    this.findAllMatches = false,
-    this.minMatchCharLength = 1,
-    this.isCaseSensitive = false,
-    this.ignoreDiacritics = false,
-    this.ignoreLocation = false,
-  }) {
+  BitapSearch(String pattern, FuseOptions<dynamic> options)
+      : location = options.location,
+        threshold = options.threshold,
+        distance = options.distance,
+        includeMatches = options.includeMatches,
+        findAllMatches = options.findAllMatches,
+        minMatchCharLength = options.minMatchCharLength,
+        isCaseSensitive = options.isCaseSensitive,
+        ignoreDiacritics = options.ignoreDiacritics,
+        ignoreLocation = options.ignoreLocation {
     var normalized = isCaseSensitive ? pattern : pattern.toLowerCase();
     normalized = ignoreDiacritics ? stripDiacritics(normalized) : normalized;
     this.pattern = normalized;
+
+    _chunks = [];
 
     if (this.pattern.isEmpty) {
       return;
@@ -70,26 +73,34 @@ class BitapSearch implements Searcher {
   final bool ignoreLocation;
 
   late final String pattern;
-  final List<_Chunk> _chunks = [];
+  late final List<_Chunk> _chunks;
 
   @override
   SearchResult searchIn(String text) {
     var normalized = isCaseSensitive ? text : text.toLowerCase();
     normalized = ignoreDiacritics ? stripDiacritics(normalized) : normalized;
 
+    // Exact match
     if (pattern == normalized) {
-      return SearchResult(
-        isMatch: true,
-        score: 0,
-        indices: includeMatches
-            ? [
-                [0, normalized.length - 1]
-              ]
-            : null,
-      );
+      // The whole string is the match, so enforce minMatchCharLength here
+      // too, mirroring convertMaskToIndices on the fuzzy path.
+      if (normalized.length < minMatchCharLength) {
+        return SearchResult(isMatch: false, score: 1);
+      }
+
+      final result = SearchResult(isMatch: true, score: 0);
+
+      if (includeMatches) {
+        result.indices = [
+          [0, normalized.length - 1]
+        ];
+      }
+
+      return result;
     }
 
-    var allIndices = <List<int>>[];
+    // Otherwise, use Bitap algorithm
+    final allIndices = <List<int>>[];
     var totalScore = 0.0;
     var hasMatches = false;
 
@@ -114,14 +125,19 @@ class BitapSearch implements Searcher {
       totalScore += result.score;
 
       if (result.isMatch && result.indices != null) {
-        allIndices = [...allIndices, ...result.indices!];
+        allIndices.addAll(result.indices!);
       }
     }
 
-    return SearchResult(
+    final result = SearchResult(
       isMatch: hasMatches,
       score: hasMatches ? totalScore / _chunks.length : 1,
-      indices: hasMatches && includeMatches ? allIndices : null,
     );
+
+    if (hasMatches && includeMatches) {
+      result.indices = mergeIndices(allIndices);
+    }
+
+    return result;
   }
 }

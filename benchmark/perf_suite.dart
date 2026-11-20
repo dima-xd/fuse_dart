@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fuse_dart/fuse_dart.dart';
 
@@ -11,6 +12,16 @@ import 'fuse_benchmark.dart' show generateDataset;
 ///
 /// Each workload is executed [samples] times after [warmup] untimed runs and
 /// the median is reported as JSON.
+///
+/// In `--workload NAME` filtered mode the suite additionally reports
+/// `mem{name: bytes}` — the peak incremental RSS attributable to that
+/// workload, sampled around every run against a baseline taken after
+/// fixture setup (the driver runs each filtered measurement in a fresh
+/// process, so per-workload attribution is clean). Unlike the Go and JS
+/// suites, Dart exposes no way to force a GC: the numbers are
+/// peaks-including-uncollected-garbage (an upper bound on retained
+/// state), and the VM reusing freed pages can make large retained
+/// structures read low. Treat the numbers as cross-port ballparks.
 void main(List<String> args) {
   final size = _arg(args, '--size', 10000);
   final samples = _arg(args, '--samples', 7);
@@ -18,47 +29,121 @@ void main(List<String> args) {
   final only = _strArg(args, '--workload');
 
   final data = generateDataset(size);
-  final strings = [for (final doc in data) doc['title'] as String];
 
-  final options = FuseOptions<Map<String, dynamic>>(
-    keys: ['title', 'author.firstName', 'author.lastName'],
-    includeScore: true,
-  );
-  final fuse = Fuse(data, options: options);
+  // Cross-language parity: `compare.mjs` diffs this against the JS twin's
+  // dataset to prove both libraries are timed on identical input.
+  if (args.contains('--dump-dataset')) {
+    stdout.writeln(jsonEncode(data));
+    return;
+  }
 
-  final stringOptions = FuseOptions<String>();
-  final stringFuse = Fuse(strings, options: stringOptions);
+  // Fixtures are built lazily so a `--workload` filtered run only pays
+  // for (and only attributes memory to) what that workload needs.
+  List<String>? stringsSlice;
+  List<String> getStrings() =>
+      stringsSlice ??= [for (final doc in data) doc['title'] as String];
 
-  final unsortedFuse = Fuse(
-    data,
-    options: FuseOptions<Map<String, dynamic>>(
-      keys: ['title', 'author.firstName', 'author.lastName'],
-      includeScore: true,
-      shouldSort: false,
-    ),
-  );
+  Fuse<Map<String, dynamic>>? fuseInst;
+  Fuse<Map<String, dynamic>> getFuse() => fuseInst ??= Fuse(
+        data,
+        options: FuseOptions<Map<String, dynamic>>(
+          keys: ['title', 'author.firstName', 'author.lastName'],
+          includeScore: true,
+        ),
+      );
 
-  final extendedFuse = Fuse(
-    data,
-    options: FuseOptions<Map<String, dynamic>>(
-      keys: ['title', 'author.lastName'],
-      useExtendedSearch: true,
-      includeScore: true,
-    ),
-  );
+  Fuse<String>? stringFuseInst;
+  Fuse<String> getStringFuse() =>
+      stringFuseInst ??= Fuse(getStrings(), options: FuseOptions<String>());
 
-  final matchFuse = Fuse(
-    data,
-    options: FuseOptions<Map<String, dynamic>>(
-      keys: ['title', 'author.lastName'],
-      includeMatches: true,
-    ),
-  );
+  Fuse<Map<String, dynamic>>? unsortedInst;
+  Fuse<Map<String, dynamic>> getUnsortedFuse() => unsortedInst ??= Fuse(
+        data,
+        options: FuseOptions<Map<String, dynamic>>(
+          keys: ['title', 'author.firstName', 'author.lastName'],
+          includeScore: true,
+          shouldSort: false,
+        ),
+      );
+
+  Fuse<Map<String, dynamic>>? extendedInst;
+  Fuse<Map<String, dynamic>> getExtendedFuse() => extendedInst ??= Fuse(
+        data,
+        options: FuseOptions<Map<String, dynamic>>(
+          keys: ['title', 'author.lastName'],
+          useExtendedSearch: true,
+          includeScore: true,
+        ),
+      );
+
+  Fuse<Map<String, dynamic>>? matchInst;
+  Fuse<Map<String, dynamic>> getMatchFuse() => matchInst ??= Fuse(
+        data,
+        options: FuseOptions<Map<String, dynamic>>(
+          keys: ['title', 'author.lastName'],
+          includeMatches: true,
+        ),
+      );
+
+  // fixturesFor returns the fixture builders a workload needs, so a
+  // filtered run can build exactly those before taking the memory
+  // baseline.
+  List<void Function()> fixturesFor(String name) {
+    switch (name) {
+      case 'fuzzy_obj_hit' ||
+            'fuzzy_obj_miss' ||
+            'fuzzy_obj_short' ||
+            'logical' ||
+            'sorted_limit':
+        return [getFuse];
+      case 'fuzzy_obj_unsorted':
+        return [getUnsortedFuse];
+      case 'fuzzy_str_hit':
+        return [getStringFuse];
+      case 'extended':
+        return [getExtendedFuse];
+      case 'include_matches':
+        return [getMatchFuse];
+      default: // index_build: raw data only
+        return const [];
+    }
+  }
 
   final results = <String, double>{};
+  final mem = <String, int>{};
+  final memTrackers = <String, void Function()>{};
 
   void measure(String name, void Function() body) {
     if (only != null && only != name) {
+      return;
+    }
+    if (only != null) {
+      // Filtered mode: build this workload's fixtures, then take the RSS
+      // baseline and track the peak current RSS across warmup + samples.
+      for (final build in fixturesFor(name)) {
+        build();
+      }
+      final baseRss = ProcessInfo.currentRss;
+      void trackMem() {
+        final d = ProcessInfo.currentRss - baseRss;
+        if (d > (mem[name] ?? 0)) mem[name] = d;
+      }
+
+      memTrackers[name] = trackMem;
+      for (var i = 0; i < warmup; i += 1) {
+        body();
+        trackMem();
+      }
+      final times = <int>[];
+      for (var i = 0; i < samples; i += 1) {
+        final sw = Stopwatch()..start();
+        body();
+        trackMem();
+        sw.stop();
+        times.add(sw.elapsedMicroseconds);
+      }
+      times.sort();
+      results[name] = times[times.length ~/ 2].toDouble();
       return;
     }
     for (var i = 0; i < warmup; i += 1) {
@@ -76,35 +161,41 @@ void main(List<String> args) {
   }
 
   measure('index_build', () {
-    Fuse(data, options: options);
+    Fuse(
+      data,
+      options: FuseOptions<Map<String, dynamic>>(
+        keys: ['title', 'author.firstName', 'author.lastName'],
+        includeScore: true,
+      ),
+    );
   });
 
   measure('fuzzy_obj_hit', () {
-    fuse.search('Old Man War');
+    getFuse().search('Old Man War');
   });
 
   measure('fuzzy_obj_miss', () {
-    fuse.search('qzxvbnm');
+    getFuse().search('qzxvbnm');
   });
 
   measure('fuzzy_obj_unsorted', () {
-    unsortedFuse.search('Old Man War');
+    getUnsortedFuse().search('Old Man War');
   });
 
   measure('fuzzy_obj_short', () {
-    fuse.search('old');
+    getFuse().search('old');
   });
 
   measure('fuzzy_str_hit', () {
-    stringFuse.search('Old Man War');
+    getStringFuse().search('Old Man War');
   });
 
   measure('extended', () {
-    extendedFuse.search("'Old ^War | =Scalzi");
+    getExtendedFuse().search("'Old ^War | =Scalzi");
   });
 
   measure('logical', () {
-    fuse.search({
+    getFuse().search({
       r'$and': [
         {'title': 'Old'},
         {'author.lastName': 'Grant'},
@@ -113,14 +204,19 @@ void main(List<String> args) {
   });
 
   measure('include_matches', () {
-    matchFuse.search('Old Man War');
+    getMatchFuse().search('Old Man War');
   });
 
   measure('sorted_limit', () {
-    fuse.search('Old Man War', limit: 10);
+    getFuse().search('Old Man War', limit: 10);
   });
 
-  print(jsonEncode({'size': size, 'samples': samples, 'results': results}));
+  print(jsonEncode({
+    'size': size,
+    'samples': samples,
+    'results': results,
+    if (mem.isNotEmpty) 'mem': mem,
+  }));
 }
 
 int _arg(List<String> args, String name, int fallback) {

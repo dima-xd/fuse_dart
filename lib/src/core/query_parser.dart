@@ -1,8 +1,9 @@
-import '../search/create_searcher.dart';
+import '../search/register.dart';
 import '../search/searcher.dart';
 import '../tools/key_store.dart';
 import 'config.dart';
 import 'error_messages.dart';
+import '../helpers/types.dart';
 
 const String logicalAnd = r'$and';
 const String logicalOr = r'$or';
@@ -16,9 +17,22 @@ bool _isPath(Map query) => query[keyTypePath] != null;
 
 bool _isLeaf(Object query) => query is Map && !_isExpression(query);
 
-Map<String, dynamic> _convertToExplicit(Map query) => {
-      logicalAnd: query.keys.map((key) => {key: query[key]}).toList(),
+Map<String, dynamic> _convertToExplicit(Object query) {
+  if (query is String) {
+    // Mirror JS `Object.keys(str)` — numeric indices into the characters.
+    return {
+      logicalAnd: [
+        for (var i = 0; i < query.length; i++) {i.toString(): query[i]},
+      ],
     };
+  }
+  final map = query as Map;
+  return {
+    logicalAnd: [
+      for (final key in map.keys) {key: map[key]}
+    ],
+  };
+}
 
 /// A node in a parsed logical query tree.
 ///
@@ -34,8 +48,9 @@ class LogicalLeaf extends LogicalNode {
   /// Creates a leaf for [keyId] and [pattern], optionally with a [searcher].
   LogicalLeaf({required this.keyId, required this.pattern, this.searcher});
 
-  /// The id of the key to search.
-  final String keyId;
+  /// The id of the key to search, or `null` for a keyless string entry that
+  /// fans out across all keys.
+  final String? keyId;
 
   /// The query pattern for this key.
   final String pattern;
@@ -58,27 +73,39 @@ class LogicalExpression extends LogicalNode {
 }
 
 LogicalNode parse<T>(
-  Map query,
+  Object query,
   FuseOptions<T> options, {
   bool auto = true,
 }) {
-  LogicalNode next(Map query) {
-    final keys = query.keys.toList();
+  LogicalNode next(Object query) {
+    // Keyless string entry: search across all keys
+    if (query is String) {
+      final leaf = LogicalLeaf(keyId: null, pattern: query);
 
-    final isQueryPath = _isPath(query);
+      if (auto) {
+        leaf.searcher = createSearcher(query, options);
+      }
 
-    if (!isQueryPath && keys.length > 1 && !_isExpression(query)) {
-      return next(_convertToExplicit(query));
+      return leaf;
+    }
+
+    final mapQuery = query as Map;
+    final keys = mapQuery.keys.toList();
+
+    final isQueryPath = _isPath(mapQuery);
+
+    if (!isQueryPath && keys.length > 1 && !_isExpression(mapQuery)) {
+      return next(_convertToExplicit(mapQuery));
     }
 
     if (_isLeaf(query)) {
       final Object key =
-          isQueryPath ? query[keyTypePath] as Object : keys.first as Object;
+          isQueryPath ? mapQuery[keyTypePath] as Object : keys.first as Object;
 
-      final pattern = isQueryPath ? query[keyTypePattern] : query[key];
+      final pattern = isQueryPath ? mapQuery[keyTypePattern] : mapQuery[key];
 
       if (pattern is! String) {
-        throw ArgumentError(logicalSearchInvalidQueryForKey(key.toString()));
+        throw FuseException(logicalSearchInvalidQueryForKey(key.toString()));
       }
 
       final leaf = LogicalLeaf(keyId: createKeyId(key), pattern: pattern);
@@ -96,10 +123,10 @@ LogicalNode parse<T>(
     );
 
     for (final key in keys) {
-      final value = query[key];
+      final value = mapQuery[key];
       if (value is List) {
         for (final item in value) {
-          node.children.add(next(item as Map));
+          node.children.add(next(item as Object));
         }
       }
     }
@@ -108,7 +135,11 @@ LogicalNode parse<T>(
   }
 
   var root = query;
-  if (!_isExpression(root)) {
+  var isExpr = false;
+  if (root is Map) {
+    isExpr = _isExpression(root);
+  }
+  if (!isExpr) {
     root = _convertToExplicit(root);
   }
 

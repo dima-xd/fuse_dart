@@ -6,31 +6,31 @@ opticoder skill (7 runs per side, 2 measured samples per process, 1 warmup).
 
 ## Environment
 
-| Field | Value |
-| --- | --- |
-| Date | 2026-10-30 |
-| Machine / CPU | AMD Ryzen 5 5600H, 6 cores |
-| OS | Windows 10.0.26200 (x64) |
-| Toolchain | Dart SDK 3.11.5, `dart compile exe` (AOT) |
-| Workload | `benchmark/perf_suite.dart --size 10000` (dataset from `generateDataset`) |
-| Metric | median wall time of the whole process / in-process workload median |
+| Field         | Value                                                                     |
+| ------------- | ------------------------------------------------------------------------- |
+| Date          | 2026-10-30                                                                |
+| Machine / CPU | AMD Ryzen 5 5600H, 6 cores                                                |
+| OS            | Windows 10.0.26200 (x64)                                                  |
+| Toolchain     | Dart SDK 3.11.5, `dart compile exe` (AOT)                                 |
+| Workload      | `benchmark/perf_suite.dart --size 10000` (dataset from `generateDataset`) |
+| Metric        | median wall time of the whole process / in-process workload median        |
 
 The per-process A/B timings include dataset generation, index construction and
-process start-up, so they *understate* the gains of the individual in-process
+process start-up, so they _understate_ the gains of the individual in-process
 workloads. Both columns are reported below.
 
 ## Experiments
 
-| # | Hypothesis | Diff | Correctness | Baseline | Result | Decision |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | String-keyed alphabet + `String[]` char access dominate Bitap | `search.dart`, `bitap_search.dart` | golden byte-identical, 92/92 tests | fuzzy hit 0.817 s | 0.306 s (−62.6%) | accepted |
-| 2 | Default sort wastes time on per-result objects | `fuse_base.dart` | golden ok | sorted_limit 0.402 s | 0.404 s (−0.4%) | rejected |
-| 3 | Reusing two row buffers avoids allocations | `search.dart` | golden ok | fuzzy hit 0.323 s | 0.366 s (−13.4%) | rejected |
-| 4 | Splitting the out-of-text tail removes a branch | `search.dart` | golden ok | fuzzy hit 0.332 s | 0.341 s (−2.8%) | rejected |
-| 5 | Removing per-record result/list allocations | `search.dart`, `fuse_base.dart` | golden ok | fuzzy hit 0.225 s | 0.226 s (−0.5%) | rejected |
-| 6 | `RegExp` token counting dominates index build | `norm.dart` | golden ok, 92/92 | index 0.318 s | 0.155 s (−51.3%) | accepted |
-| 7 | Path traversal allocates a list + closure per field | `get.dart` | golden ok, 92/92 | index 0.187 s | 0.158 s (−15.6%) | accepted |
-| 8 | Inlining `computeScore` in the hot loops | `search.dart` | golden ok | fuzzy hit 0.222 s | 0.236 s (−6.5%) | rejected |
+| #   | Hypothesis                                                    | Diff                               | Correctness                        | Baseline             | Result           | Decision |
+| --- | ------------------------------------------------------------- | ---------------------------------- | ---------------------------------- | -------------------- | ---------------- | -------- |
+| 1   | String-keyed alphabet + `String[]` char access dominate Bitap | `search.dart`, `bitap_search.dart` | golden byte-identical, 92/92 tests | fuzzy hit 0.817 s    | 0.306 s (−62.6%) | accepted |
+| 2   | Default sort wastes time on per-result objects                | `fuse_base.dart`                   | golden ok                          | sorted_limit 0.402 s | 0.404 s (−0.4%)  | rejected |
+| 3   | Reusing two row buffers avoids allocations                    | `search.dart`                      | golden ok                          | fuzzy hit 0.323 s    | 0.366 s (−13.4%) | rejected |
+| 4   | Splitting the out-of-text tail removes a branch               | `search.dart`                      | golden ok                          | fuzzy hit 0.332 s    | 0.341 s (−2.8%)  | rejected |
+| 5   | Removing per-record result/list allocations                   | `search.dart`, `fuse_base.dart`    | golden ok                          | fuzzy hit 0.225 s    | 0.226 s (−0.5%)  | rejected |
+| 6   | `RegExp` token counting dominates index build                 | `norm.dart`                        | golden ok, 92/92                   | index 0.318 s        | 0.155 s (−51.3%) | accepted |
+| 7   | Path traversal allocates a list + closure per field           | `get.dart`                         | golden ok, 92/92                   | index 0.187 s        | 0.158 s (−15.6%) | accepted |
+| 8   | Inlining `computeScore` in the hot loops                      | `search.dart`                      | golden ok                          | fuzzy hit 0.222 s    | 0.236 s (−6.5%)  | rejected |
 
 ## Notes per experiment
 
@@ -48,16 +48,16 @@ workloads. Both columns are reported below.
   location/distance/threshold/options) identical to the baseline. 92/92 tests.
 - **Measurements (A vs B, process median):**
 
-  | Workload | A | B | Gain |
-  | --- | --- | --- | --- |
-  | fuzzy_obj_hit | 0.817 s | 0.306 s | 62.6% |
-  | fuzzy_obj_miss | 0.566 s | 0.249 s | 56.0% |
+  | Workload        | A       | B       | Gain  |
+  | --------------- | ------- | ------- | ----- |
+  | fuzzy_obj_hit   | 0.817 s | 0.306 s | 62.6% |
+  | fuzzy_obj_miss  | 0.566 s | 0.249 s | 56.0% |
   | fuzzy_obj_short | 0.418 s | 0.272 s | 34.8% |
-  | fuzzy_str_hit | 0.599 s | 0.318 s | 46.9% |
+  | fuzzy_str_hit   | 0.599 s | 0.318 s | 46.9% |
   | include_matches | 0.750 s | 0.314 s | 58.1% |
-  | sorted_limit | 0.894 s | 0.319 s | 64.3% |
-  | logical | 0.292 s | 0.216 s | 26.1% |
-  | extended | 0.189 s | 0.184 s | 3.0% |
+  | sorted_limit    | 0.894 s | 0.319 s | 64.3% |
+  | logical         | 0.292 s | 0.216 s | 26.1% |
+  | extended        | 0.189 s | 0.184 s | 3.0%  |
 
 - **Decision:** accepted; all fuzzy workloads beat the 2% threshold with
   non-overlapping 95% CIs. `index_build` was unchanged (−3.8%, rejected as
