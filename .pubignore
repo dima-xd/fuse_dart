@@ -1,2 +1,6 @@
 .ref/
 CLAUDE.md
+
+# Git submodule: the shared conformance harness (upstream Fuse.js suite,
+# dist builds, node_modules). Not part of the library sources.
+conformance/
