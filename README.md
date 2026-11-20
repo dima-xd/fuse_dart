@@ -1,5 +1,7 @@
 # fuse_dart
 
+[![fuse_dart on pub.dev](https://pub-dev-stats.vercel.app/card/fuse_dart?theme=dark)](https://pub.dev/packages/fuse_dart)
+
 A pure Dart port of [Fuse.js](https://fusejs.io) — a lightweight fuzzy-search
 library. This version targets **Fuse.js v7.5.0**: the Bitap approximate-
 matching algorithm with identical scoring and ranking, weighted keys, nested
